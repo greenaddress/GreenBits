@@ -20,6 +20,7 @@
 package com.btchip;
 
 import java.io.ByteArrayOutputStream;
+import java.util.concurrent.ExecutionException;
 
 import com.btchip.comm.BTChipTransport;
 import com.btchip.utils.BIP32Utils;
@@ -182,10 +183,6 @@ public class BTChipDongle implements BTChipConstants {
 		}
 	}
 
-    public BTChipInput createInput(byte[] value, boolean trusted) {
-        return new BTChipInput(value, trusted);
-    }
-
 	public class BTChipOutput {
 		private byte[] value;
 		private boolean confirmationNeeded;
@@ -212,6 +209,7 @@ public class BTChipDongle implements BTChipConstants {
 	
 	private BTChipTransport transport;
 	private int lastSW;
+	private boolean supportScreen;
 	
 	private static final int OK[] = { SW_OK };
 	private static final byte DUMMY[] = { 0 };
@@ -219,9 +217,24 @@ public class BTChipDongle implements BTChipConstants {
 	public BTChipDongle(BTChipTransport transport) {
 		this.transport = transport;
 	}
+	
+	public BTChipDongle(BTChipTransport transport, boolean supportScreen) {
+		this.transport = transport;
+		this.supportScreen = supportScreen;
+	}	
+	
+	public boolean hasScreenSupport() {
+		return supportScreen;
+	}
 		
 	private byte[] exchange(byte[] apdu) throws BTChipException {
-		byte[] response = transport.exchange(apdu);
+		byte[] response;
+		try {
+			response = transport.exchange(apdu).get();
+		}
+		catch(Exception e) {
+			throw new BTChipException("I/O error", e);
+		}
 		if (response.length < 2) {
 			throw new BTChipException("Truncated response");
 		}
@@ -350,6 +363,10 @@ public class BTChipDongle implements BTChipConstants {
 		byte[] response = exchangeApdu(BTCHIP_CLA, BTCHIP_INS_GET_TRUSTED_INPUT, (byte)0x80, (byte)0x00, transaction.getLockTime(), OK);		
 		return new BTChipInput(response, true);
 	}
+
+	public BTChipInput createInput(byte[] value, boolean trusted) {
+        	return new BTChipInput(value, trusted);
+    	}
 	
 	public void startUntrustedTransction(boolean newTransaction, long inputIndex, BTChipInput usedInputList[], byte[] redeemScript) throws BTChipException {
 		// Start building a fake transaction with the passed inputs
@@ -363,10 +380,9 @@ public class BTChipDongle implements BTChipConstants {
 			byte[] script = (currentIndex == inputIndex ? redeemScript : new byte[0]);
 			data = new ByteArrayOutputStream();
 			data.write(input.isTrusted() ? (byte)0x01 : (byte)0x00);
-            if (input.isTrusted()) {
-                // untrusted inputs have constant length
-                data.write(input.getValue().length);
-            }
+			if (input.isTrusted()) {
+				data.write(input.getValue().length);
+			}
 			BufferUtils.writeBuffer(data, input.getValue());
 			VarintUtils.write(data, script.length);
 			exchangeApdu(BTCHIP_CLA, BTCHIP_INS_HASH_INPUT_START, (byte)0x80, (byte)0x00, data.toByteArray(), OK);
@@ -463,7 +479,7 @@ public class BTChipDongle implements BTChipConstants {
 	
 	public void setKeymapEncoding(byte[] keymapEncoding) throws BTChipException {
 		ByteArrayOutputStream data = new ByteArrayOutputStream();
-		data.write(keymapEncoding.length);
+		//data.write(keymapEncoding.length);
 		BufferUtils.writeBuffer(data, keymapEncoding);
 		exchangeApdu(BTCHIP_CLA, BTCHIP_INS_SET_KEYMAP, (byte)0x00, (byte)0x00, data.toByteArray(), OK);		
 	}
@@ -518,7 +534,16 @@ public class BTChipDongle implements BTChipConstants {
 			data.write(0);
 		}
 		byte[] response = exchangeApdu(BTCHIP_CLA, BTCHIP_INS_SETUP, (byte)0x00, (byte)0x00, data.toByteArray(), OK);
-		setKeymapEncoding(keymapEncoding);
+		if (keymapEncoding != null) {
+			setKeymapEncoding(keymapEncoding);
+		}
 		return (response[0] == (byte)0x01);
+	}
+	
+	public byte[] compressPublicKey(byte[] publicKey) {
+		byte[] result = new byte[33];
+		result[0] = (((publicKey[64] & 1) != 0) ? (byte)0x03 : (byte)0x02);
+		System.arraycopy(publicKey, 1, result, 1, 32);
+		return result;		
 	}
 }

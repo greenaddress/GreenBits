@@ -3,6 +3,7 @@ package com.greenaddress.greenbits.ui;
 
 import com.btchip.BTChipDongle;
 import com.btchip.BTChipException;
+import com.btchip.BitcoinTransaction;
 import com.btchip.comm.BTChipTransport;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -22,6 +23,7 @@ import org.bitcoinj.crypto.ChildNumber;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.spongycastle.util.encoders.Hex;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -44,6 +46,11 @@ public class BTChipHWWallet implements ISigningWallet {
         this.loginActivity = loginActivity;
         this.pin = pin;
         this.addrn = addrn;
+    }
+    
+    public BTChipHWWallet(BTChipDongle dongle) {
+    	this.dongle = dongle;
+    	this.pin = "0000";
     }
 
     public BTChipHWWallet(BTChipTransport transport, RequestLoginActivity loginActivity, String pin, final SettableFuture<Integer> remainingAttemptsFuture) {
@@ -87,23 +94,33 @@ public class BTChipHWWallet implements ISigningWallet {
             @Override
             public List<ECKey.ECDSASignature> call() throws Exception {
                 List<ECKey.ECDSASignature> sigs = new LinkedList<>();
-
                 BTChipDongle.BTChipInput inputs[] = new BTChipDongle.BTChipInput[tx.decoded.getInputs().size()];
-                for (int i = 0; i < tx.decoded.getInputs().size(); ++i) {
-                    byte[] inputHash = tx.decoded.getInputs().get(i).getOutpoint().getHash().getBytes();
-                    for (int j = 0; j < inputHash.length / 2; ++j) {
-                        byte temp = inputHash[j];
-                        inputHash[j] = inputHash[inputHash.length - j - 1];
-                        inputHash[inputHash.length - j - 1] = temp;
-                    }
-                    byte[] input = Arrays.copyOf(inputHash, inputHash.length + 4);
-                    long index = tx.decoded.getInputs().get(i).getOutpoint().getIndex();
-                    input[input.length - 4] = (byte)(index % 256); index /= 256;
-                    input[input.length - 3] = (byte)(index % 256); index /= 256;
-                    input[input.length - 2] = (byte)(index % 256); index /= 256;
-                    input[input.length - 1] = (byte)(index % 256);
-                    inputs[i] = dongle.createInput(input, false);
+                if (!dongle.hasScreenSupport()) {                	
+                	for (int i = 0; i < tx.decoded.getInputs().size(); ++i) {
+                		byte[] inputHash = tx.decoded.getInputs().get(i).getOutpoint().getHash().getBytes();
+                		for (int j = 0; j < inputHash.length / 2; ++j) {
+                			byte temp = inputHash[j];
+                			inputHash[j] = inputHash[inputHash.length - j - 1];
+                			inputHash[inputHash.length - j - 1] = temp;
+                		}
+                		byte[] input = Arrays.copyOf(inputHash, inputHash.length + 4);
+                		long index = tx.decoded.getInputs().get(i).getOutpoint().getIndex();
+                		input[input.length - 4] = (byte)(index % 256); index /= 256;
+                		input[input.length - 3] = (byte)(index % 256); index /= 256;
+                		input[input.length - 2] = (byte)(index % 256); index /= 256;
+                		input[input.length - 1] = (byte)(index % 256);
+                		inputs[i] = dongle.createInput(input, false);
+                	}
                 }
+                else {                
+                	for (int i = 0; i < tx.decoded.getInputs().size(); ++i) {
+                		TransactionOutPoint outpoint = tx.decoded.getInputs().get(i).getOutpoint();
+                		long index = outpoint.getIndex();
+                		ByteArrayInputStream in = new ByteArrayInputStream(tx.prevoutRawTxs.get(outpoint.getHash().toString()).unsafeBitcoinSerialize());
+                		BitcoinTransaction encodedTx = new BitcoinTransaction(in);
+                		inputs[i] = dongle.getTrustedInput(encodedTx, index);
+                	}
+                }                
                 for (int i = 0; i < tx.decoded.getInputs().size(); ++i) {
                     dongle.startUntrustedTransction(i == 0, i, inputs, Hex.decode(tx.prev_outputs.get(i).getScript()));
                     ByteArrayOutputStream stream = new UnsafeByteArrayOutputStream(tx.decoded.getMessageSize() < 32 ? 32 : tx.decoded.getMessageSize() + 32);

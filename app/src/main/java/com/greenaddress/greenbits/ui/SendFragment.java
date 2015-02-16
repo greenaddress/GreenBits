@@ -162,7 +162,9 @@ public class SendFragment extends GAFragment {
                             @Override
                             public void onSuccess(@Nullable final String result) {
                                 if (fromIntentURI) {
-                                    getActivity().finish();
+                                	if (getActivity() != null) {
+                                		getActivity().finish();
+                                	}
                                     return;
                                 }
                                 getActivity().runOnUiThread(new Runnable() {
