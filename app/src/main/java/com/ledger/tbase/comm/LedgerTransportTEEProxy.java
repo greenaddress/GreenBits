@@ -13,10 +13,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import com.btchip.BTChipConstants;
 import com.btchip.BTChipException;
 import com.btchip.comm.BTChipTransport;
 import com.btchip.comm.android.BTChipTransportAndroid;
 import com.btchip.utils.Dump;
+import com.ledger.tbase.utils.LedgerTAUtils;
 import com.ledger.wallet.bridge.common.LedgerWalletBridgeConstants;
 
 public class LedgerTransportTEEProxy implements BTChipTransport, LedgerWalletBridgeConstants {
@@ -31,7 +33,7 @@ public class LedgerTransportTEEProxy implements BTChipTransport, LedgerWalletBri
 	
 	private static final byte[] APDU_INIT[] = {
 		Dump.hexToBin("D020000038000000000000000118F43F95A217EFEDE0A8D98DAC357E3B2501E79C3958B9D7E15238D43A6807C397680EB805BC0E95E2B65D9E49B1B045"),
-		Dump.hexToBin("D02200002B000000020000000120DD035968C6BAEBD56D19BF9DC06E51293E9AFBB4C5EC08DAEA4F4C33AB477ACB009D")
+		Dump.hexToBin("D02200002B000000020000000120B25006C589F0DCF1BBB75BAA1542A5E6CF300995F0046DE59CC641C0798D9D489006")
 	};
 	
 	private static final int SW_OK = 0x9000;
@@ -65,6 +67,11 @@ public class LedgerTransportTEEProxy implements BTChipTransport, LedgerWalletBri
 		runIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		runIntent.setType(LedgerTBounceActivity.MIME_INIT_INTERNAL);
 		runIntent.putExtra(LedgerTBounceActivity.EXTRA_NVM, nvm);
+		LedgerTAUtils.LedgerTA ta = LedgerTAUtils.getTA();
+		if (ta != null) {
+			runIntent.putExtra(LedgerTBounceActivity.EXTRA_DATA, ta.getTA());
+			runIntent.putExtra(LedgerTBounceActivity.EXTRA_SPID, ta.getSPID());
+		}
 		context.startActivity(runIntent);				
 		try {
 			session = exchanger.exchange(new byte[0], LedgerTBounceActivity.EXCHANGE_TIMEOUT_MS, TimeUnit.MILLISECONDS);
@@ -101,6 +108,21 @@ public class LedgerTransportTEEProxy implements BTChipTransport, LedgerWalletBri
 						
 		return true;
 	}
+	
+	private boolean needExternalUI(byte[] commandParam) {
+		// Some commands need to call the Trusted UI :
+		// SETUP, VERIFY PIN, HASH INPUT FINALIZE, HASH INPUT FINALIZE FULL
+		byte ins = commandParam[1];
+		switch(ins) {
+			case BTChipConstants.BTCHIP_INS_SETUP:
+			case BTChipConstants.BTCHIP_INS_VERIFY_PIN:
+			case BTChipConstants.BTCHIP_INS_HASH_INPUT_FINALIZE:
+			case BTChipConstants.BTCHIP_INS_HASH_INPUT_FINALIZE_FULL:
+				return true;
+			default:
+				return false;
+		}
+	}
 
 	@Override
 	public Future<byte[]> exchange(byte[] commandParam) throws BTChipException {
@@ -113,10 +135,17 @@ public class LedgerTransportTEEProxy implements BTChipTransport, LedgerWalletBri
 		final Exchanger<byte[]> exchanger = ExchangerProvider.getNewExchanger();
 		final byte[] command = commandParam;
 		Intent runIntent = new Intent(context, LedgerTBounceActivity.class);
-		runIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		runIntent.setType(LedgerTBounceActivity.MIME_EXCHANGE_INTERNAL);
+		runIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);		
 		runIntent.putExtra(LedgerTBounceActivity.EXTRA_SESSION, session);
 		runIntent.putExtra(LedgerTBounceActivity.EXTRA_DATA, command);
+		if (needExternalUI(command)) {
+			runIntent.setType(LedgerTBounceActivity.MIME_EXCHANGE_EXTENDED_INTERNAL);
+			runIntent.putExtra(LedgerTBounceActivity.EXTRA_PROTOCOL, (byte)0x01);
+			runIntent.putExtra(LedgerTBounceActivity.EXTRA_EXTENDED_DATA, LedgerTAUtils.getTAExternalUI());
+		}
+		else {
+			runIntent.setType(LedgerTBounceActivity.MIME_EXCHANGE_INTERNAL);			
+		}
 		context.startActivity(runIntent);			
 		return executor.submit(new Callable<byte[]>() {
 			@Override
@@ -137,10 +166,12 @@ public class LedgerTransportTEEProxy implements BTChipTransport, LedgerWalletBri
 	}
 
 	@Override
-	public void close() throws BTChipException {		
+	public void close() throws BTChipException {
+		
 		if (session == null) {
 			return;
 		}
+
 		Exchanger<byte[]> exchanger = ExchangerProvider.getNewExchanger();
 		Intent runIntent = new Intent(context, LedgerTBounceActivity.class);
 		runIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

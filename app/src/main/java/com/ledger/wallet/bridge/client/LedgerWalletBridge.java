@@ -6,14 +6,21 @@ import com.ledger.wallet.bridge.common.LedgerWalletBridgeConstants;
 
 public class LedgerWalletBridge implements LedgerWalletBridgeConstants {
 	
-    public static Intent open(byte[] ta) {
+	public static final int SPID = 42;
+	//public static final int SPID = 31732824;
+	
+	public static final int TEST_SPID = 42;
+	
+    public static Intent open(Integer spid, byte[] ta) {
     	Intent intent = new Intent(INTENT_NAME);
     	intent.setType(MIME_OPEN);
+    	intent.putExtra(EXTRA_SPID, spid);
     	intent.putExtra(EXTRA_DATA, ta);
     	return intent;
     }
     public static Intent open() {
-    	return open(null);
+    	//return open(null, null);
+    	return open(SPID, null);
     }
 
     public static Intent initStorage(byte[] sessionBlob, byte[] storage) {
@@ -60,6 +67,16 @@ public class LedgerWalletBridge implements LedgerWalletBridgeConstants {
     	return intent;
     }
     
+    public static Intent exchange(byte[] sessionBlob, byte protocol, byte[] request, byte[] extendedRequest) {
+    	Intent intent = new Intent(INTENT_NAME);
+    	intent.setType(MIME_EXCHANGE_EXTENDED);
+    	intent.putExtra(EXTRA_SESSION, sessionBlob);
+    	intent.putExtra(EXTRA_PROTOCOL, protocol);
+    	intent.putExtra(EXTRA_DATA, request);
+    	intent.putExtra(EXTRA_EXTENDED_DATA, extendedRequest);
+    	return intent;
+    }
+    
     public static Intent close(byte[] sessionBlob) {
     	Intent intent = new Intent(INTENT_NAME);
     	intent.setType(MIME_CLOSE);
@@ -86,6 +103,13 @@ public class LedgerWalletBridge implements LedgerWalletBridgeConstants {
     		return null;
     	}
     	return intent.getExtras().getByteArray(EXTRA_DATA);
+    }
+    
+    public static byte[] getExtendedData(Intent intent) {
+    	if (intent.getExtras() == null) {
+    		return null;
+    	}
+    	return intent.getExtras().getByteArray(EXTRA_EXTENDED_DATA);
     }
     
     public static Exception getException(Intent intent) {
