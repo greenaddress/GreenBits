@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 
 import android.os.Environment;
+import android.util.Log;
 
 public class LedgerTAUtils {
 	
@@ -38,6 +39,7 @@ public class LedgerTAUtils {
 			return data;
 		}
 		catch(Exception e) {
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -75,5 +77,11 @@ public class LedgerTAUtils {
 		File ui = new File(pathProd, "LWTA-ta-ui.bin");
 		return readFile(ui);		
 	}
+	
+	public static String getTAExternalUIPath() {
+		File pathProd = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "LedgerTrustlet");
+		File ui = new File(pathProd, "LWTA-ta-ui.bin");
+		return ui.getAbsolutePath();
+	}	
 
 }

@@ -11,7 +11,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 public class LedgerTBounceActivity extends Activity implements LedgerWalletBridgeConstants {
-	
+
 	private static final String TAG = "LedgerTBounceActivity";
 	
 	protected static final String EXTRA_EXCHANGE = "ledger_bounce_exchange";
@@ -21,6 +21,7 @@ public class LedgerTBounceActivity extends Activity implements LedgerWalletBridg
 	protected static final String EXTRA_SPID = "ledger_bounce_spid";
 	protected static final String EXTRA_PROTOCOL = "ledger_bounce_protocol";
 	protected static final String EXTRA_EXTENDED_DATA = "ledger_bounce_extended_data";
+	protected static final String EXTRA_EXTENDED_DATA_PATH = "ledger_bounce_extended_data_path";
 		
 	protected static final String MIME_INIT_INTERNAL = "ledgerbounce/init";
 	protected static final String MIME_GET_NVM_INTERNAL = "ledgerbounce/getnvm";
@@ -28,7 +29,8 @@ public class LedgerTBounceActivity extends Activity implements LedgerWalletBridg
 	protected static final String MIME_EXCHANGE_INTERNAL = "ledgerbounce/exchange";
 	protected static final String MIME_EXCHANGE_EXTENDED_INTERNAL = "ledgerbounce/exchangeExtended";
 	
-	protected static final int EXCHANGE_TIMEOUT_MS = 30000;
+	//protected static final int EXCHANGE_TIMEOUT_MS = 30000;
+	protected static final int EXCHANGE_TIMEOUT_MS = 120000;
 	
 	private static final int REQUEST_CODE = 1;
 			
@@ -47,6 +49,7 @@ public class LedgerTBounceActivity extends Activity implements LedgerWalletBridg
 		byte protocol = (byte)0;
 		byte[] extendedData = null;
 		byte[] ta = null;
+		String extendedDataPath = null;
 		int spid = LedgerWalletBridge.TEST_SPID;
 		if (getIntent().getExtras() != null) {
 			nvm = getIntent().getExtras().getByteArray(EXTRA_NVM);
@@ -55,6 +58,7 @@ public class LedgerTBounceActivity extends Activity implements LedgerWalletBridg
 			protocol = getIntent().getExtras().getByte(EXTRA_PROTOCOL, (byte)0);
 			extendedData = getIntent().getExtras().getByteArray(EXTRA_EXTENDED_DATA);
 			spid = getIntent().getExtras().getInt(EXTRA_SPID, spid);
+			extendedDataPath = getIntent().getExtras().getString(EXTRA_EXTENDED_DATA_PATH);
 		}		
 		if (intentType.equals(MIME_INIT_INTERNAL)) {
 			if (data != null) {
@@ -75,7 +79,12 @@ public class LedgerTBounceActivity extends Activity implements LedgerWalletBridg
 		}		
 		else
 		if (intentType.equals(MIME_EXCHANGE_EXTENDED_INTERNAL)) {
-			dispatchIntent = LedgerWalletBridge.exchange(session, protocol, data, extendedData);
+			if (extendedDataPath == null) {
+				dispatchIntent = LedgerWalletBridge.exchange(session, protocol, data, extendedData);
+			}
+			else {
+				dispatchIntent = LedgerWalletBridge.exchange(session, protocol, data, extendedDataPath);
+			}
 		}
 		else
 		if (intentType.equals(MIME_CLOSE_INTERNAL)) {
@@ -137,4 +146,5 @@ public class LedgerTBounceActivity extends Activity implements LedgerWalletBridg
     	}
     	finish();
     }
+    
 }

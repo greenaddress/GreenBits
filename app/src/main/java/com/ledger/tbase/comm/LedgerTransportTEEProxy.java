@@ -141,7 +141,8 @@ public class LedgerTransportTEEProxy implements BTChipTransport, LedgerWalletBri
 		if (needExternalUI(command)) {
 			runIntent.setType(LedgerTBounceActivity.MIME_EXCHANGE_EXTENDED_INTERNAL);
 			runIntent.putExtra(LedgerTBounceActivity.EXTRA_PROTOCOL, (byte)0x01);
-			runIntent.putExtra(LedgerTBounceActivity.EXTRA_EXTENDED_DATA, LedgerTAUtils.getTAExternalUI());
+			//runIntent.putExtra(LedgerTBounceActivity.EXTRA_EXTENDED_DATA, LedgerTAUtils.getTAExternalUI());
+			runIntent.putExtra(LedgerTBounceActivity.EXTRA_EXTENDED_DATA_PATH, LedgerTAUtils.getTAExternalUIPath());
 		}
 		else {
 			runIntent.setType(LedgerTBounceActivity.MIME_EXCHANGE_INTERNAL);			

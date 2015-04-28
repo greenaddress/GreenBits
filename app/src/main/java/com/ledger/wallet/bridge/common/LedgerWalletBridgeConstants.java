@@ -17,7 +17,8 @@ public interface LedgerWalletBridgeConstants {
 	public static final String EXTRA_DATA = "ledger_data";
 	public static final String EXTRA_SPID = "ledger_spid";
 	public static final String EXTRA_PROTOCOL = "ledger_protocol";
-	public static final String EXTRA_EXTENDED_DATA = "ledger_extended_data";	
+	public static final String EXTRA_EXTENDED_DATA = "ledger_extended_data";
+	public static final String EXTRA_EXTENDED_DATA_PATH = "ledger_extended_data_path";
 	public static final String EXTRA_EXCEPTION = "ledger_exception";
 	public static final String EXTRA_INTENT = "ledger_intent";
 }

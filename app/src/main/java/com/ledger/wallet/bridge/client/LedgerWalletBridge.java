@@ -77,6 +77,16 @@ public class LedgerWalletBridge implements LedgerWalletBridgeConstants {
     	return intent;
     }
     
+    public static Intent exchange(byte[] sessionBlob, byte protocol, byte[] request, String extendedRequestDataPath) {
+    	Intent intent = new Intent(INTENT_NAME);
+    	intent.setType(MIME_EXCHANGE_EXTENDED);
+    	intent.putExtra(EXTRA_SESSION, sessionBlob);
+    	intent.putExtra(EXTRA_PROTOCOL, protocol);
+    	intent.putExtra(EXTRA_DATA, request);
+    	intent.putExtra(EXTRA_EXTENDED_DATA_PATH, extendedRequestDataPath);
+    	return intent;
+    }    
+        
     public static Intent close(byte[] sessionBlob) {
     	Intent intent = new Intent(INTENT_NAME);
     	intent.setType(MIME_CLOSE);
