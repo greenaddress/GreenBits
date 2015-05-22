@@ -99,6 +99,7 @@ public class BTChipHWWallet implements ISigningWallet {
             public List<ECKey.ECDSASignature> call() throws Exception {
                 List<ECKey.ECDSASignature> sigs = new LinkedList<>();
                 BTChipDongle.BTChipInput inputs[] = new BTChipDongle.BTChipInput[tx.decoded.getInputs().size()];
+<<<<<<< HEAD
                 if (!dongle.hasScreenSupport()) {                	
                 	for (int i = 0; i < tx.decoded.getInputs().size(); ++i) {
                 		byte[] inputHash = tx.decoded.getInputs().get(i).getOutpoint().getHash().getBytes();
@@ -115,6 +116,25 @@ public class BTChipHWWallet implements ISigningWallet {
                 		input[input.length - 1] = (byte)(index % 256);
                 		inputs[i] = dongle.createInput(input, false);
                 	}
+=======
+                for (int i = 0; i < tx.decoded.getInputs().size(); ++i) {
+                    byte[] inputHash = tx.decoded.getInputs().get(i).getOutpoint().getHash().getBytes();
+                    for (int j = 0; j < inputHash.length / 2; ++j) {
+                        byte temp = inputHash[j];
+                        inputHash[j] = inputHash[inputHash.length - j - 1];
+                        inputHash[inputHash.length - j - 1] = temp;
+                    }
+                    byte[] input = Arrays.copyOf(inputHash, inputHash.length + 4);
+                    long index = tx.decoded.getInputs().get(i).getOutpoint().getIndex();
+                    input[input.length - 4] = (byte) (index % 256);
+                    index /= 256;
+                    input[input.length - 3] = (byte) (index % 256);
+                    index /= 256;
+                    input[input.length - 2] = (byte) (index % 256);
+                    index /= 256;
+                    input[input.length - 1] = (byte) (index % 256);
+                    inputs[i] = dongle.createInput(input, false);
+>>>>>>> 74864f3... reformat code
                 }
                 else {                
                 	for (int i = 0; i < tx.decoded.getInputs().size(); ++i) {
@@ -134,14 +154,13 @@ public class BTChipHWWallet implements ISigningWallet {
                     dongle.finalizeInputFull(stream.toByteArray());
                     sigs.add(ECKey.ECDSASignature.decodeFromDER(
                             dongle.untrustedHashSign(outToPath(tx.prev_outputs.get(i)),
-                                "0", tx.decoded.getLockTime(), (byte)1 /* = SIGHASH_ALL */)));
+                                    "0", tx.decoded.getLockTime(), (byte) 1 /* = SIGHASH_ALL */)));
                 }
 
                 return sigs;
             }
         });
     }
-
 
 
     @Override
@@ -173,7 +192,7 @@ public class BTChipHWWallet implements ISigningWallet {
             @Override
             public ECKey.ECDSASignature call() throws Exception {
                 dongle.signMessagePrepare(getPath(), message.getBytes());
-                BTChipDongle.BTChipSignature sig = dongle.signMessageSign(new byte[] { 0 });
+                BTChipDongle.BTChipSignature sig = dongle.signMessageSign(new byte[]{0});
                 return ECKey.ECDSASignature.decodeFromDER(sig.getSignature());
             }
         });

@@ -78,9 +78,6 @@ public class WalletClient {
     private ISigningWallet hdWallet;
 
     private String mnemonics = null;
-    public String getMnemonics() {
-        return mnemonics;
-    }
 
     public WalletClient(final INotificationHandler notificationHandler, final ListeningExecutorService es) {
         this.m_notificationHandler = notificationHandler;
@@ -109,6 +106,10 @@ public class WalletClient {
         byte[] step2 = new byte[64];
         hmac.doFinal(step2, 0);
         return step2;    	
+    }
+
+    public String getMnemonics() {
+        return mnemonics;
     }
 
     public void disconnect() {
@@ -319,7 +320,9 @@ public class WalletClient {
         final SettableFuture<Map<?, ?>> asyncWamp = SettableFuture.create();
         mConnection.call("http://greenaddressit.com/login/available_currencies", Map.class, new Wamp.CallHandler() {
             @Override
-            public void onResult(Object result) { asyncWamp.set((Map) result); }
+            public void onResult(Object result) {
+                asyncWamp.set((Map) result);
+            }
 
             @Override
             public void onError(String errorUri, String errorDesc) {
@@ -418,7 +421,7 @@ public class WalletClient {
                 mConnection.subscribe("http://greenaddressit.com/tx_notify", Map.class, new Wamp.EventHandler() {
                     @Override
                     public void onEvent(String topicUri, Object event) {
-                        final Map<?, ?> res = (Map)event;
+                        final Map<?, ?> res = (Map) event;
                         final String txhash = (String) res.get("txhash"),
                                 value = (String) res.get("value"),
                                 wallet_id = (String) res.get("wallet_id");
@@ -428,7 +431,7 @@ public class WalletClient {
                             subaccounts_long[i] = ((Number) subaccounts.get(i)).longValue();
                         }
                         m_notificationHandler.onNewTransaction(Long.valueOf(wallet_id),
-                                 subaccounts_long, Long.valueOf(value), txhash);
+                                subaccounts_long, Long.valueOf(value), txhash);
                     }
                 });
             }
@@ -448,8 +451,8 @@ public class WalletClient {
         mConnection = new WampConnection();
         final WampOptions options = new WampOptions();
         options.setReceiveTextMessagesRaw(true);
-        options.setMaxMessagePayloadSize(1024*1024);
-        options.setMaxFramePayloadSize(1024*1024);
+        options.setMaxMessagePayloadSize(1024 * 1024);
+        options.setMaxFramePayloadSize(1024 * 1024);
         options.setTcpNoDelay(true);
 
         Wamp.ConnectionHandler handler = new Wamp.ConnectionHandler() {
@@ -628,8 +631,7 @@ public class WalletClient {
 
                                 asyncWamp.set(WalletClient.this.loginData);
                             }
-                        }
-                        catch (final ClassCastException | IOException e) {
+                        } catch (final ClassCastException | IOException e) {
 
                             asyncWamp.setException(e);
                         }
@@ -729,12 +731,11 @@ public class WalletClient {
                     final String decrypted = new String(AES256.decrypt(
                             Base64.decode(encrypted_splitted[1], Base64.NO_WRAP), PBKDF2SHA512.derive(
                                     password, encrypted_splitted[0], 2048, 32)));
-                        final Map<String, String> json = new MappingJsonFactory().getCodec().readValue(
-                                decrypted, Map.class);
-                        mnemonics = json.get("mnemonic");
-                        asyncWamp.set(HDKeyDerivation.createMasterPrivateKey(com.subgraph.orchid.encoders.Hex.decode(json.get("seed"))));
-                    }
-                catch (final InvalidCipherTextException | IOException e) {
+                    final Map<String, String> json = new MappingJsonFactory().getCodec().readValue(
+                            decrypted, Map.class);
+                    mnemonics = json.get("mnemonic");
+                    asyncWamp.set(HDKeyDerivation.createMasterPrivateKey(com.subgraph.orchid.encoders.Hex.decode(json.get("seed"))));
+                } catch (final InvalidCipherTextException | IOException e) {
                     asyncWamp.setException(e);
                 }
             }
@@ -835,7 +836,7 @@ public class WalletClient {
         return asyncWamp;
     }
 
-    private ListenableFuture<SetPinData> setPinLogin(final String mnemonic, final byte[] seed, final String pin, final String device_name)  {
+    private ListenableFuture<SetPinData> setPinLogin(final String mnemonic, final byte[] seed, final String pin, final String device_name) {
         final SettableFuture<SetPinData> asyncWamp = SettableFuture.create();
         final Map<String, String> out = new HashMap<>();
 
@@ -880,11 +881,11 @@ public class WalletClient {
         }, es);
     }
 
-    private PreparedTransaction createTx(Map<?,?> prepared, Map<String, ?> privateData) {
+    private PreparedTransaction createTx(Map<?, ?> prepared, Map<String, ?> privateData) {
         String twoOfThreeBackupChaincode = null, twoOfThreeBackupPubkey = null;
         if (privateData != null && privateData.get("subaccount") != null && !privateData.get("subaccount").equals(0)) {
             for (Object subaccount : loginData.subaccounts) {
-                Map <String, ?> subaccountMap = (Map) subaccount;
+                Map<String, ?> subaccountMap = (Map) subaccount;
                 if (subaccountMap.get("type").equals("2of3") && subaccountMap.get("pointer").equals(privateData.get("subaccount"))) {
                     twoOfThreeBackupChaincode = (String) subaccountMap.get("2of3_backup_chaincode");
                     twoOfThreeBackupPubkey = (String) subaccountMap.get("2of3_backup_pubkey");
@@ -913,8 +914,8 @@ public class WalletClient {
         return asyncWamp;
     }
 
-    public ListenableFuture<Map<?,?>> processBip70URL(String url) {
-        final SettableFuture<Map<?,?>> asyncWamp = SettableFuture.create();
+    public ListenableFuture<Map<?, ?>> processBip70URL(String url) {
+        final SettableFuture<Map<?, ?>> asyncWamp = SettableFuture.create();
         mConnection.call("http://greenaddressit.com/vault/process_bip0070_url", Map.class, new Wamp.CallHandler() {
             @Override
             public void onResult(final Object data) {
@@ -929,7 +930,7 @@ public class WalletClient {
         return asyncWamp;
     }
 
-    public ListenableFuture<PreparedTransaction> preparePayreq(Coin amount, Map<?,?> data, final Map<String, Object> privateData) {
+    public ListenableFuture<PreparedTransaction> preparePayreq(Coin amount, Map<?, ?> data, final Map<String, Object> privateData) {
 
         final SettableFuture<PreparedTransaction> asyncWamp = SettableFuture.create();
 
@@ -962,7 +963,7 @@ public class WalletClient {
     public ListenableFuture<Map<?, ?>> prepareSweepSocial(byte[] pubKey, boolean useElectrum) {
         final Integer[] pubKeyObjs = new Integer[pubKey.length];
         for (int i = 0; i < pubKey.length; ++i) {
-            pubKeyObjs[i] = pubKey[i]&0xff;
+            pubKeyObjs[i] = pubKey[i] & 0xff;
         }
         final SettableFuture<Map<?, ?>> asyncWamp = SettableFuture.create();
         mConnection.call("http://greenaddressit.com/vault/prepare_sweep_social", Map.class, new Wamp.CallHandler() {
@@ -1019,8 +1020,8 @@ public class WalletClient {
                             account = hdWallet;
                         } else {
                             account = hdWallet
-                                .deriveChildKey(new ChildNumber(3, true))
-                                .deriveChildKey(new ChildNumber(prevOut.getSubaccount(), true));
+                                    .deriveChildKey(new ChildNumber(3, true))
+                                    .deriveChildKey(new ChildNumber(prevOut.getSubaccount(), true));
                         }
 
                         final ISigningWallet branchKey = account.deriveChildKey(new ChildNumber(prevOut.getBranch(), privateDerivation));
@@ -1058,7 +1059,7 @@ public class WalletClient {
                     Hex.decode(loginData.gait_path)), new FutureCallback<List<ECKey.ECDSASignature>>() {
                 @Override
                 public void onSuccess(@Nullable List<ECKey.ECDSASignature> signatures) {
-                    List < String > result = new LinkedList<>();
+                    List<String> result = new LinkedList<>();
                     for (ECKey.ECDSASignature sig : signatures) {
                         final TransactionSignature txSignature = new TransactionSignature(sig, Transaction.SigHash.ALL, false);
                         result.add(Hex.toHexString(txSignature.encodeToBitcoin()));
@@ -1130,7 +1131,7 @@ public class WalletClient {
 
     public ListenableFuture<Object> requestTwoFacCode(final String method, final String action, final Object data) {
         final SettableFuture<Object> asyncWamp = SettableFuture.create();
-        mConnection.call("http://greenaddressit.com/twofactor/request_"+method, Object.class, new Wamp.CallHandler() {
+        mConnection.call("http://greenaddressit.com/twofactor/request_" + method, Object.class, new Wamp.CallHandler() {
             @Override
             public void onResult(final Object result) {
                 asyncWamp.set(result);
@@ -1181,7 +1182,7 @@ public class WalletClient {
         return asyncWamp;
     }
 
-    public ListenableFuture<Boolean> initEnableTwoFac(String type, String details, Map<?,?> twoFacData) {
+    public ListenableFuture<Boolean> initEnableTwoFac(String type, String details, Map<?, ?> twoFacData) {
         final SettableFuture<Boolean> asyncWamp = SettableFuture.create();
         mConnection.call("http://greenaddressit.com/twofactor/init_enable_" + type, Boolean.class, new Wamp.CallHandler() {
             @Override
