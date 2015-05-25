@@ -6,6 +6,7 @@
   <string name="title_activity_receive">استقبال</string>
   <string name="sendToText">إلى</string>
   <string name="sendAmountText">مبلغ</string>
+  <string name="mobileNumber">Mobile Number</string>
   <string name="sendSendButton">إرسال</string>
   <string name="title_activity_pin">Pin</string>
   <string name="pinSaveText">حفظ</string>
@@ -170,7 +171,10 @@
   <string name="copyAddress">نسخ</string>
   <string name="txReceivedOn">الاستلام في</string>
   <string name="title_activity_bit_boat">شراء بيتكوين عن طريق BitBoat</string>
+  <string name="title_activity_bit_refill">Bitrefill</string>
   <string name="buyBTC">شراء بيتكوين</string>
+  <string name="topUpMobile">Mobile TopUp</string>
+  <string name="mobileCheck">Check</string>
   <string name="buyBtcPendingOrders">في انتظار الأوامر</string>
   <string name="methodOfPayment">طريقة الدفع</string>
   <string name="minutesLeft">%s دقيقة متبقية</string>

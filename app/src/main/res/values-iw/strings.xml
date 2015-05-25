@@ -7,6 +7,7 @@
     <string name="title_activity_receive">קבל</string>
     <string name="sendToText">אל</string>
     <string name="sendAmountText">סכום</string>
+    <string name="mobileNumber">Mobile Number</string>
     <string name="sendSendButton">שלח</string>
     <string name="title_activity_pin">קוד PIN</string>
     <string name="pinSaveText">שמור</string>
@@ -176,7 +177,10 @@
     <string name="newAddress">New</string>
     <string name="txReceivedOn">Received on</string>
     <string name="title_activity_bit_boat">Buy BTC with BitBoat</string>
+    <string name="title_activity_bit_refill">Bitrefill</string>
     <string name="buyBTC">Buy BTC</string>
+    <string name="topUpMobile">Mobile TopUp</string>
+    <string name="mobileCheck">Check</string>
     <string name="buyBtcPendingOrders">Pending orders</string>
     <string name="methodOfPayment">Method of payment</string>
     <string name="minutesLeft">%s minutes left</string>

@@ -21,7 +21,7 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/warning"
-                android:textColor="@color/textColor"
+                android:textColor="@color/accent"
                 android:gravity="center"
                 android:textSize="24sp" />
 
@@ -29,7 +29,7 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:textColor="@color/textColor"
+                android:textColor="@color/accent"
                 android:text="@string/save_password_now" />
 
             <RelativeLayout

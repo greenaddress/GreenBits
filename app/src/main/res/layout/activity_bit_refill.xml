@@ -1,0 +1,80 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_height="match_parent" android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    tools:context="com.greenaddress.greenbits.ui.bitrefill.BitRefillActivity">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true">
+
+        <TextView
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/mobileNumber"
+            android:textSize="24sp" />
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            >
+
+            <RelativeLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <com.greenaddress.greenbits.ui.FontFitEditText
+
+                    android:id="@+id/mobileNumberEditText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal|center_vertical"
+                    android:textColor="@color/textColor"
+                    android:gravity="end|center_vertical"
+                    android:hint="+1 201-555-5555"
+                    android:textSize="24sp" />
+
+            </RelativeLayout>
+
+            <View
+                android:layout_width="16dp"
+                android:layout_height="fill_parent" />
+
+        </LinearLayout>
+
+        <com.dd.CircularProgressButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/checkNumberButton"
+            android:layout_gravity="right"
+            android:layout_weight="0"
+            style="@style/myButton"
+            app:cpb_textIdle="@string/mobileCheck"
+            app:cpb_colorIndicator="@color/accent"
+            app:cpb_selectorIdle="@drawable/buttonprogressselector"
+            android:elevation="8dp"
+            android:textColor="@color/white" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/buyBtcPendingOrders"
+            android:textSize="24sp"
+            android:id="@+id/textView8" />
+
+        <ListView
+            android:id="@+id/listView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal" />
+
+    </LinearLayout>
+</RelativeLayout>

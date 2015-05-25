@@ -6,6 +6,7 @@
   <string name="title_activity_receive">Empfangen</string>
   <string name="sendToText">An</string>
   <string name="sendAmountText">Betrag</string>
+  <string name="mobileNumber">Mobile Number</string>
   <string name="sendSendButton">Senden</string>
   <string name="title_activity_pin">Pin</string>
   <string name="pinSaveText">Speichern</string>
@@ -170,7 +171,10 @@
   <string name="copyAddress">Kopieren</string>
   <string name="txReceivedOn">Empfangsadresse</string>
   <string name="title_activity_bit_boat">BTC mit BitBoat kaufen</string>
+  <string name="title_activity_bit_refill">Bitrefill</string>
   <string name="buyBTC">BTC kaufen</string>
+  <string name="topUpMobile">Mobile TopUp</string>
+  <string name="mobileCheck">Check</string>
   <string name="buyBtcPendingOrders">Ausstehende Aufträge</string>
   <string name="methodOfPayment">Zahlungsweise</string>
   <string name="minutesLeft">noch %s Minuten</string>

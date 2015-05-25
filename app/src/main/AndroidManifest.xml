@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- F-DROID HACK (for some reason checkupdates expects package name to match appid)
-    package="com.greenaddress.greenbits_android_wallet" --> 
+<!--
+ F-DROID HACK (for some reason checkupdates expects package name to match appid)
+    package="com.greenaddress.greenbits_android_wallet"
+-->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.greenaddress.greenbits.ui" >
 
@@ -17,7 +19,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.NFC" />
 
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
     <uses-feature
         android:name="android.hardware.nfc"
         android:required="false" />
@@ -136,8 +140,16 @@
             android:label="@string/twoFacSetupHeader" >
         </activity>
         <activity
-            android:name=".BitBoatActivity"
+            android:name=".bitboat.BitBoatActivity"
             android:label="@string/title_activity_bit_boat" >
+        </activity>
+        <activity
+            android:name=".bitrefill.BitRefillActivity"
+            android:label="@string/title_activity_bit_refill" >
+        </activity>
+        <activity
+            android:name=".bitrefill.MobileOperatorPackagesActivity"
+            android:label="@string/title_activity_mobile_operator_packages" >
         </activity>
     </application>
 

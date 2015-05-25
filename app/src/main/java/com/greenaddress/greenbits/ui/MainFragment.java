@@ -26,6 +26,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.greenaddress.greenapi.Network;
 import com.greenaddress.greenbits.ConnectivityObservable;
 import com.greenaddress.greenbits.GaService;
+import com.greenaddress.greenbits.ui.bitboat.BitBoatActivity;
 
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.NetworkParameters;
@@ -147,9 +148,13 @@ public class MainFragment extends GAFragment implements Observer {
                 type = Transaction.TYPE_REDEPOSIT;
             }
         }
-        boolean spvVerified = getGAApp().getSharedPreferences("verified_utxo_"
-                + getGAService().getReceivingId(), Context.MODE_PRIVATE).getBoolean(txhash, false);
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        final String prefKey = String.format("verified_utxo_%s",
+            getGAService().getReceivingId());
+
+        final boolean spvVerified = getGAApp()
+            .getSharedPreferences(prefKey, Context.MODE_PRIVATE)
+            .getBoolean(txhash, false);
+        final SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         df.setTimeZone(TimeZone.getTimeZone("UTC"));
         return new Transaction(type, amount, counterparty,
                 df.parse((String) txJSON.get("created_at")), txhash, memo, curBlock, blockHeight, spvVerified, isSpent,

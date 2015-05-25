@@ -1,4 +1,4 @@
-package com.greenaddress.greenbits.ui;
+package com.greenaddress.greenbits.ui.bitboat;
 
 import android.content.Intent;
 import android.net.Uri;
@@ -30,6 +30,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 import com.greenaddress.greenbits.ConnectivityObservable;
 import com.greenaddress.greenbits.QrBitmap;
+import com.greenaddress.greenbits.ui.ActionBarActivity;
+import com.greenaddress.greenbits.ui.CurrencyMapper;
+import com.greenaddress.greenbits.ui.R;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -169,42 +172,45 @@ public class BitBoatActivity extends ActionBarActivity {
         final ListenableFuture<String> req = execHTTP(request);
 
         Futures.addCallback(req, new FutureCallback<String>() {
-            @Override
-            public void onSuccess(@Nullable String result) {
-                Log.d("BitBoat", result);
-                Map<String, Object> json = null;
-                try {
-                    json = new MappingJsonFactory().getCodec().readValue(
-                            result, Map.class);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-
-                Map<String, Object> pp = (Map<String, Object>) json.get("pp");
-                Map<String, Object> ppBtc = (Map<String, Object>) pp.get("btc");
-                Double ppBtcPrice = (Double) ppBtc.get("price");
-
-                Map<String, Object> sf = (Map<String, Object>) json.get("sf");
-                Map<String, Object> sfBtc = (Map<String, Object>) sf.get("btc");
-                Double sfBtcPrice = (Double) sfBtc.get("price");
-
-                Map<String, Object> mc = (Map<String, Object>) json.get("mc");
-                Map<String, Object> mcBtc = (Map<String, Object>) mc.get("btc");
-                Double mcBtcPrice = (Double) sfBtc.get("price");
-
-                ppPrice.set(new ExchangeRate(Fiat.parseFiat("EUR", ppBtcPrice.toString())));
-                sfPrice.set(new ExchangeRate(Fiat.parseFiat("EUR", sfBtcPrice.toString())));
-                mcPrice.set(new ExchangeRate(Fiat.parseFiat("EUR", mcBtcPrice.toString())));
-
-                ppAvailable = Coin.parseCoin(ppBtc.get("disp").toString());
-                sfAvailable = Coin.parseCoin(sfBtc.get("disp").toString());
-                mcAvailable = Coin.parseCoin(mcBtc.get("disp").toString());
+          @Override
+          public void onSuccess(@Nullable String result) {
+            Log.d("BitBoat", result);
+            Map<String, Object> json = null;
+            try {
+              json = new MappingJsonFactory().getCodec().readValue(
+                  result, Map.class);
+            } catch (IOException e) {
+              throw new RuntimeException(e);
             }
 
-            @Override
-            public void onFailure(Throwable t) {
-                t.printStackTrace();
-            }
+            Map<String, Object> pp = (Map<String, Object>) json.get("pp");
+            Map<String, Object> ppBtc = (Map<String, Object>) pp.get("btc");
+            Double ppBtcPrice = (Double) ppBtc.get("price");
+
+            Map<String, Object> sf = (Map<String, Object>) json.get("sf");
+            Map<String, Object> sfBtc = (Map<String, Object>) sf.get("btc");
+            Double sfBtcPrice = (Double) sfBtc.get("price");
+
+            Map<String, Object> mc = (Map<String, Object>) json.get("mc");
+            Map<String, Object> mcBtc = (Map<String, Object>) mc.get("btc");
+            Double mcBtcPrice = (Double) sfBtc.get("price");
+
+            ppPrice.set(new ExchangeRate(Fiat.parseFiat("EUR", ppBtcPrice
+                .toString())));
+            sfPrice.set(new ExchangeRate(Fiat.parseFiat("EUR", sfBtcPrice
+                .toString())));
+            mcPrice.set(new ExchangeRate(Fiat.parseFiat("EUR", mcBtcPrice
+                .toString())));
+
+            ppAvailable = Coin.parseCoin(ppBtc.get("disp").toString());
+            sfAvailable = Coin.parseCoin(sfBtc.get("disp").toString());
+            mcAvailable = Coin.parseCoin(mcBtc.get("disp").toString());
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            t.printStackTrace();
+          }
         });
         amountFiatEdit.addTextChangedListener(new TextWatcher() {
             @Override
@@ -641,7 +647,7 @@ public class BitBoatActivity extends ActionBarActivity {
         updatingPending = false;
     }
 
-    private ListenableFuture<String> execHTTP(HttpUriRequest request) {
+    private ListenableFuture<String> execHTTP(final HttpUriRequest request) {
         final SettableFuture<String> req = SettableFuture.create();
         (new AsyncTask<HttpUriRequest, String, String>() {
             @Override
