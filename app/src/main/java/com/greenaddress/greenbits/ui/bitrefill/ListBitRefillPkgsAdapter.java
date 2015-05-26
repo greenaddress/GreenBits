@@ -40,8 +40,9 @@ public class ListBitRefillPkgsAdapter extends ArrayAdapter<BitRefillPackage> {
       returnedView = convertView;
       holder = (Holder) returnedView.getTag();
     }
-
-    holder.value.setText(current.value);
+    final String displayValue = String.format("%s %s", current.value,
+        current.currency);
+    holder.value.setText(displayValue);
     holder.eurValue.setText(current.eurPrice);
     holder.btcValue.setText(current.satoshiPrice);
     return returnedView;

@@ -1,0 +1,131 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="com.greenaddress.greenbits.ui.bitrefill.BitRefillPaymentActivity">
+
+    <TextView
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Email"
+        android:textSize="34sp"
+        android:paddingBottom="10dp"
+        android:id="@+id/testView23"/>
+
+    <EditText
+        android:id="@+id/emailText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:ems="10"
+        android:gravity="center"
+        android:hint="you@domain.com"
+        android:maxLength="15"
+        android:textColor="@color/secondaryTextColor"
+
+        android:textSize="34sp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Operator and Package"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textSize="25sp"
+        android:paddingBottom="10dp"
+        android:id="@+id/operatorPackage"
+        android:layout_gravity="center_horizontal|left"/>
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textSize="20sp"
+        android:text="MTS Ukraine, 250 UAH"
+        android:paddingBottom="10dp"
+        android:paddingLeft="10dp"
+
+        android:id="@+id/operatorPackageValue"
+        android:layout_gravity="center_horizontal|left"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Price"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textSize="25sp"
+        android:paddingBottom="10dp"
+        android:id="@+id/satoshiPrice"
+        android:layout_gravity="center_horizontal|left"/>
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="0.0001"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textSize="20sp"
+        android:paddingBottom="10dp"
+        android:paddingLeft="10dp"
+        android:id="@+id/satoshiPriceValue"
+        android:layout_gravity="center_horizontal|left"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="Mobile Number"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textSize="25sp"
+        android:paddingBottom="10dp"
+        android:id="@+id/mobileNumber"
+        android:layout_gravity="center_horizontal|left"/>
+
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="+380995353237"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textSize="20sp"
+        android:paddingBottom="10dp"
+        android:paddingLeft="10dp"
+        android:id="@+id/mobileNumberValue"
+        android:layout_gravity="center_horizontal|left"/>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingTop="10dp"
+        >
+
+        <com.dd.CircularProgressButton
+            android:id="@+id/payButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            style="@style/myButton"
+            app:cpb_colorIndicator="@color/accent"
+            app:cpb_selectorIdle="@drawable/buttonprogressselector"
+            android:elevation="8dp"
+            android:textColor="@color/white"
+            app:cpb_textIdle="Pay"/>
+
+    </LinearLayout>
+
+</LinearLayout>

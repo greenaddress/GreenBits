@@ -5,6 +5,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -22,6 +25,7 @@ import java.util.List;
 
 public class MobileOperatorPackagesActivity extends ActionBarActivity {
 
+  private static final String TAG = "BirefillPkgPick";
 
   @Override
   protected void onCreate(final Bundle savedInstanceState) {
@@ -29,9 +33,12 @@ public class MobileOperatorPackagesActivity extends ActionBarActivity {
     setContentView(R.layout.activity_mobile_operator_packages);
     final Intent intent = getIntent();
     final String result = intent.getExtras().getString("operator");
+    final String mobileNumber = intent.getExtras().getString("number");
+
     final List<BitRefillPackage> pkgs = new ArrayList<>();
     final ListView listView = (ListView) findViewById(R.id.listView);
     final TextView operatorText = (TextView) findViewById(R.id.operator);
+
     final ImageView opImage = (ImageView) findViewById(R.id.imageView);
 
 
@@ -55,21 +62,25 @@ public class MobileOperatorPackagesActivity extends ActionBarActivity {
           opImage.setImageBitmap(result);
         }
       }.execute();
-      operatorText.setText(operator.getString("name"));
-      // FIXME: add operator icon
+
+
+      final String operatorSlug = operator.getString("slug");
+      final String operatorName = operator.getString("name");
+      operatorText.setText(operatorName);
+
       final JSONArray packages = operator.getJSONArray("packages");
       final String currency = operator.getString("currency");
       for (int i = 0; i < packages.length(); ++i) {
         final JSONObject pkg = packages.getJSONObject(i);
-        final String value = String.format("%s %s", pkg.getString
-            ("value"), currency);
         final String price = String.format("(= %s EUR)", pkg.getString
             ("eurPrice"));
 
-        pkgs.add(new BitRefillPackage(value, price, pkg.getString
-            ("satoshiPrice")));
+        pkgs.add(new BitRefillPackage(pkg.getString("value"), price, pkg
+            .getString
+            ("satoshiPrice"), currency));
 
       }
+
       if (listView.getAdapter() != null) {
         ((ListBitRefillPkgsAdapter) listView.getAdapter()).clear();
         for (final BitRefillPackage pkg : pkgs) {
@@ -81,6 +92,28 @@ public class MobileOperatorPackagesActivity extends ActionBarActivity {
         listView.setAdapter(new ListBitRefillPkgsAdapter(
             MobileOperatorPackagesActivity.this,
             R.layout.list_element_bitrefill, pkgs));
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+          @Override
+          public void onItemClick(final AdapterView<?> adapterView, final View
+              view, final int position, final long l) {
+
+            final BitRefillPackage pkg = (BitRefillPackage) listView
+                .getAdapter().getItem(position);
+            Log.i(TAG, pkg.satoshiPrice);
+            final Intent intent = new Intent(MobileOperatorPackagesActivity
+                .this,
+                BitRefillPaymentActivity.class);
+
+            intent.putExtra("number", mobileNumber);
+            intent.putExtra("valuePackage", pkg.value);
+            intent.putExtra("operatorSlug", operatorSlug);
+            intent.putExtra("operatorName", operatorName);
+            intent.putExtra("currency", currency);
+            intent.putExtra("satoshiPrice", pkg.satoshiPrice);
+
+            startActivity(intent);
+          }
+        });
       }
 
     } catch (final JSONException e) {

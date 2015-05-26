@@ -94,24 +94,30 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".PinSaveActivity"
             android:label="@string/app_name"
             android:noHistory="true"
             android:windowSoftInputMode="stateVisible" />
+
         <activity
             android:name=".FirstScreenActivity"
             android:label="@string/title_activity_first_screen" />
+
         <activity
             android:name=".SignUpActivity"
             android:label="@string/title_activity_sign_up" />
+
         <activity
             android:name="de.schildbach.wallet.ui.ScanActivity"
             android:label="@string/title_activity_qr_scanner"
             android:screenOrientation="landscape" />
+
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings" />
+
         <activity
             android:name=".RequestLoginActivity"
             android:label="Login" >
@@ -149,6 +155,10 @@
         </activity>
         <activity
             android:name=".bitrefill.MobileOperatorPackagesActivity"
+            android:label="@string/title_activity_mobile_operator_packages" >
+        </activity>
+        <activity
+            android:name=".bitrefill.BitRefillPaymentActivity"
             android:label="@string/title_activity_mobile_operator_packages" >
         </activity>
     </application>

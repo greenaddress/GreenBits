@@ -21,22 +21,20 @@ import com.greenaddress.greenbits.ui.R;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLEncoder;
 
 public class BitRefillActivity extends ActionBarActivity {
 
-  private static final String BASE_URL = "https://api.bitrefill.com/v1";
+  public static final String BASE_URL = "https://api.bitrefill.com/v1";
   private static final String KEY = "73YY73YNJ284Y3MOVPHITD5A3";
   private static final String SECRET =
       "DVbfs3JNkoXlDnzeOIH7lge00eq5jg2MrxJwMX9MCPQ";
-  private static final String BASIC_AUTH = String.format("Basic %s",
+  public static final String BASIC_AUTH = String.format("Basic %s",
       Base64.encodeToString(String.format("%s:%s", KEY, SECRET).getBytes(),
           Base64.NO_WRAP));
 
@@ -61,6 +59,7 @@ public class BitRefillActivity extends ActionBarActivity {
 
     final HttpURLConnection urlConnection = (HttpURLConnection) url
         .openConnection();
+
 
     try {
 
@@ -146,8 +145,9 @@ public class BitRefillActivity extends ActionBarActivity {
               final Intent i = new Intent(BitRefillActivity.this,
                   MobileOperatorPackagesActivity.class);
               i.putExtra("operator", result);
+              i.putExtra("number", mobileNumberEdit
+                  .getText().toString());
               startActivity(i);
-
             }
           }
 
