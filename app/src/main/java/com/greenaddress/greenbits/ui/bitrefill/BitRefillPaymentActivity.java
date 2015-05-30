@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.dd.CircularProgressButton;
@@ -26,8 +25,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 
 public class BitRefillPaymentActivity extends ActionBarActivity {
 
@@ -36,7 +33,7 @@ public class BitRefillPaymentActivity extends ActionBarActivity {
       BitRefillActivity.BASE_URL);
 
   private String post_order(final JSONObject order) throws IOException {
-
+    Log.i(TAG, order.toString());
     final URL payUrl = new URL(URL);
     final HttpURLConnection urlC = (HttpURLConnection) payUrl.openConnection();
 

@@ -29,7 +29,6 @@
         android:ems="10"
         android:gravity="center"
         android:hint="you@domain.com"
-        android:maxLength="15"
         android:textColor="@color/secondaryTextColor"
 
         android:textSize="34sp" />

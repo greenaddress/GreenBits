@@ -49,8 +49,7 @@ public class MobileOperatorPackagesActivity extends ActionBarActivity {
       new AsyncTask<Void, Void, Bitmap>() {
         protected Bitmap doInBackground(final Void... Voids) {
           try {
-            final InputStream in = new java.net.URL(logoImage)
-                .openStream();
+            final InputStream in = new java.net.URL(logoImage).openStream();
             return BitmapFactory.decodeStream(in);
           } catch (final Exception e) {
             e.printStackTrace();
