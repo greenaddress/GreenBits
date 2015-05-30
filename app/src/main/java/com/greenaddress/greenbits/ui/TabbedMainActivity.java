@@ -93,7 +93,7 @@ public class TabbedMainActivity extends ActionBarActivity
         .ACTION_NDEF_DISCOVERED.equals(getIntent().getAction());
 
     if (isBitcoinURL) {
-      if (getGAService() == null || !getGAApp().getConnectionObservable()
+      if (!getGAApp().getConnectionObservable()
           .getState()
           .equals(ConnectivityObservable.State.LOGGEDIN)
           || getGAApp().getConnectionObservable().getState()
