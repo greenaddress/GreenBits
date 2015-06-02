@@ -14,13 +14,14 @@ import java.util.List;
 public class DeterministicSigningKey implements ISigningWallet {
     private DeterministicKey hdWallet;
 
-    public DeterministicSigningKey(DeterministicKey masterPrivateKey) {
+    public DeterministicSigningKey(final DeterministicKey masterPrivateKey) {
         hdWallet = masterPrivateKey;
     }
 
     @Override
-    public ISigningWallet deriveChildKey(ChildNumber childNumber) {
-        return new DeterministicSigningKey(HDKeyDerivation.deriveChildKey(hdWallet, childNumber));
+    public ISigningWallet deriveChildKey(final ChildNumber childNumber) {
+        return new DeterministicSigningKey(HDKeyDerivation
+            .deriveChildKey(hdWallet, childNumber));
     }
 
     @Override
@@ -29,12 +30,15 @@ public class DeterministicSigningKey implements ISigningWallet {
     }
 
     @Override
-    public ListenableFuture<ECKey.ECDSASignature> signHash(Sha256Hash hash) {
-        return Futures.immediateFuture(ECKey.fromPrivate(hdWallet.getPrivKey()).sign(hash));
+    public ListenableFuture<ECKey.ECDSASignature> signHash(
+        final Sha256Hash hash) {
+        return Futures.immediateFuture(ECKey
+            .fromPrivate(hdWallet.getPrivKey()).sign(hash));
     }
 
     @Override
-    public ListenableFuture<ECKey.ECDSASignature> signMessage(String message) {
+    public ListenableFuture<ECKey.ECDSASignature> signMessage(
+        final String message) {
         return Futures.immediateFuture(null);
     }
 
@@ -49,7 +53,9 @@ public class DeterministicSigningKey implements ISigningWallet {
     }
 
     @Override
-    public ListenableFuture<List<ECKey.ECDSASignature>> signTransaction(PreparedTransaction tx, String coinName, byte[] gait_path) {
+    public ListenableFuture<List<ECKey.ECDSASignature>> signTransaction(
+        final PreparedTransaction tx, final String coinName,
+        final byte[] gait_path) {
         return null;
     }
 }
