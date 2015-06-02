@@ -12,6 +12,7 @@ import android.widget.TextView;
 import com.dd.CircularProgressButton;
 import com.greenaddress.greenbits.ui.ActionBarActivity;
 import com.greenaddress.greenbits.ui.R;
+import com.greenaddress.greenbits.ui.TabbedMainActivity;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -23,16 +24,20 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 
 public class BitRefillPaymentActivity extends ActionBarActivity {
 
-  private static final String TAG = "BirefillPkgPay";
-  private static final String URL = String.format("%s/order",
+  private static final String TAG = "BitrefillPkgPay";
+  private static final String URL = String.format("%s/order/",
       BitRefillActivity.BASE_URL);
 
   private String post_order(final JSONObject order) throws IOException {
+    Log.i(TAG, URL);
+
     Log.i(TAG, order.toString());
     final URL payUrl = new URL(URL);
     final HttpURLConnection urlC = (HttpURLConnection) payUrl.openConnection();
@@ -40,6 +45,9 @@ public class BitRefillPaymentActivity extends ActionBarActivity {
     try {
 
       urlC.setRequestProperty("Authorization", BitRefillActivity.BASIC_AUTH);
+      urlC.setDoOutput(true);
+      urlC.setRequestProperty("Content-Type", "application/json");
+      urlC.setRequestProperty("Accept", "application/json");
       urlC.setRequestMethod("POST");
       urlC.connect();
 
@@ -92,10 +100,11 @@ public class BitRefillPaymentActivity extends ActionBarActivity {
     final String currency = intent.getExtras().getString("currency");
 
     final CircularProgressButton payButton = (CircularProgressButton)
-          findViewById(R.id.payButton);
+        findViewById(R.id.payButton);
 
     final EditText emailText = (EditText) findViewById(R.id.emailText);
-    final TextView operator = (TextView) findViewById(R.id.operatorPackageValue);
+    final TextView operator = (TextView) findViewById(R.id
+        .operatorPackageValue);
     operator.setText(String.format("%s, %s %s", operatorName, valuePackage,
         currency));
 
@@ -109,44 +118,61 @@ public class BitRefillPaymentActivity extends ActionBarActivity {
 
     final View.OnClickListener ocl = new View.OnClickListener() {
 
-        @Override
-        public void onClick(final View v) {
+      @Override
+      public void onClick(final View v) {
 
-          new AsyncTask<Void, Void, String>() {
-            @Override
-            protected String doInBackground(final Void... Voids) {
-              try {
-                final JSONObject order = new JSONObject();
-                order.put("operatorSlug", operatorSlug);
-                order.put("valuePackage", valuePackage);
-                order.put("number", mobileNumber);
-                order.put("email", emailText.getText().toString());
-                final String json = post_order(order);
-                Log.i(TAG, json);
-                return json;
+        new AsyncTask<Void, Void, String>() {
+          @Override
+          protected String doInBackground(final Void... Voids) {
+            try {
+              final JSONObject orderReq = new JSONObject();
+              orderReq.put("operatorSlug", operatorSlug);
+              orderReq.put("valuePackage", valuePackage);
+              orderReq.put("number", mobileNumber);
+              orderReq.put("email", emailText.getText().toString());
+              final String json = post_order(orderReq);
+              Log.i(TAG, json);
+              return json;
 
-              } catch (final IOException e) {
-                e.printStackTrace();
+            } catch (final IOException e) {
+              e.printStackTrace();
 
-              } catch (final JSONException e) {
-                e.printStackTrace();
-              }
-              return null;
-
+            } catch (final JSONException e) {
+              e.printStackTrace();
             }
+            return null;
 
-            protected void onPostExecute(final String result) {
-              payButton.setIndeterminateProgressMode(false);
-              payButton.setProgress(0);
+          }
+
+          protected void onPostExecute(final String result) {
+            payButton.setIndeterminateProgressMode(false);
+            payButton.setProgress(0);
+
+            try {
+              final JSONObject payment = new JSONObject(result)
+                  .getJSONObject("payment");
+
+              startActivity(new Intent(Intent.ACTION_VIEW,
+                  Uri.parse(String.format("%s&r=%s", payment.getString
+                      ("BIP21"), URLEncoder.encode(payment.getString
+                      ("BIP73"), "utf-8"))), BitRefillPaymentActivity.this,
+                  TabbedMainActivity.class));
+              finish();
+
+            } catch (final JSONException e) {
+              e.printStackTrace();
+            } catch (final UnsupportedEncodingException e) {
+              e.printStackTrace();
             }
+          }
 
-          }.execute();
+        }.execute();
 
-          payButton.setIndeterminateProgressMode(true);
-          payButton.setProgress(50);
-        }
-      };
+        payButton.setIndeterminateProgressMode(true);
+        payButton.setProgress(50);
+      }
+    };
 
-      payButton.setOnClickListener(ocl);
+    payButton.setOnClickListener(ocl);
   }
 }
