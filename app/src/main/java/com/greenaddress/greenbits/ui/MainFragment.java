@@ -270,7 +270,8 @@ public class MainFragment extends GAFragment implements Observer {
                     // no observer means we're synchronizing
                     blocksLeft = String.valueOf(getGAService().getSpvBlocksLeft());
                 }
-                MaterialDialog.Builder builder = new MaterialDialog.Builder(getActivity())
+                final MaterialDialog.Builder builder = new MaterialDialog
+                    .Builder(getActivity())
                         .title(getResources().getString(R.string.unconfirmedBalanceTitle))
                         .content(getResources().getString(R.string.unconfirmedBalanceText) + " " + blocksLeft)
                         .positiveColorRes(R.color.accent)
@@ -321,7 +322,7 @@ public class MainFragment extends GAFragment implements Observer {
                                                 "Not yet connected to SPV!");
                                     }
                                     handler.postDelayed(this, 2000);
-                                } catch (IllegalStateException e) {
+                                } catch (final IllegalStateException e) {
                                     e.printStackTrace();
                                     // can happen if the activity is terminated
                                     // ("Fragment MainFragment not attached to Activity")

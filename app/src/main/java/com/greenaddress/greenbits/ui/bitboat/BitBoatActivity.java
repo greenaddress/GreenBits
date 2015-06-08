@@ -90,7 +90,7 @@ public class BitBoatActivity extends ActionBarActivity {
     private Map<String, SettableFuture<Boolean>> pendingFutures = new HashMap<>();
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(final Bundle outState) {
         super.onSaveInstanceState(outState);
 
         outState.putBoolean("inProgress", inProgress);
@@ -98,7 +98,7 @@ public class BitBoatActivity extends ActionBarActivity {
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getGAService() == null) {
             finish();
@@ -128,8 +128,8 @@ public class BitBoatActivity extends ActionBarActivity {
 
         final List<Map<String, Object>> paymentMethods = new ArrayList<>();
         if (country.equals("IT")) {
-            Map<String, Object> superflash = new HashMap<>();
-            Map<String, Object> postepay = new HashMap<>();
+            final Map<String, Object> superflash = new HashMap<>();
+            final Map<String, Object> postepay = new HashMap<>();
             superflash.put("name", "Superflash");
             superflash.put("id", BitBoatTransaction.PAYMETHOD_SUPERFLASH);
             postepay.put("name", "Postepay");
@@ -137,14 +137,15 @@ public class BitBoatActivity extends ActionBarActivity {
             paymentMethods.add(postepay);
             paymentMethods.add(superflash);
         } else { // FR
-            Map<String, Object> mandatcompte = new HashMap<>();
+            final Map<String, Object> mandatcompte = new HashMap<>();
             mandatcompte.put("name", "Mandat Compte");
             mandatcompte.put("id", BitBoatTransaction.PAYMETHOD_MANDATCOMPTE);
             paymentMethods.add(mandatcompte);
         }
 
 
-        Spinner methodOfPayment = ((Spinner) findViewById(R.id.methodOfPayment));
+        final Spinner methodOfPayment = ((Spinner) findViewById(R.id
+            .methodOfPayment));
 
         methodOfPayment.setAdapter(new SimpleAdapter(
                 this,
@@ -155,14 +156,15 @@ public class BitBoatActivity extends ActionBarActivity {
         ));
         methodOfPayment.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemSelected(final AdapterView<?> parent, final View
+                view, final int position, final long id) {
                 Map<String, Object> item = paymentMethods.get(position);
                 payMethod = ((Number) item.get("id")).intValue();
                 convertBtcToFiat();
             }
 
             @Override
-            public void onNothingSelected(AdapterView<?> parent) {
+            public void onNothingSelected(final AdapterView<?> parent) {
 
             }
         });
@@ -173,7 +175,7 @@ public class BitBoatActivity extends ActionBarActivity {
 
         Futures.addCallback(req, new FutureCallback<String>() {
           @Override
-          public void onSuccess(@Nullable String result) {
+          public void onSuccess(final @Nullable String result) {
             Log.d("BitBoat", result);
             Map<String, Object> json = null;
             try {
@@ -183,17 +185,20 @@ public class BitBoatActivity extends ActionBarActivity {
               throw new RuntimeException(e);
             }
 
-            Map<String, Object> pp = (Map<String, Object>) json.get("pp");
-            Map<String, Object> ppBtc = (Map<String, Object>) pp.get("btc");
-            Double ppBtcPrice = (Double) ppBtc.get("price");
+            final Map<String, Object> pp = (Map<String, Object>) json.get("pp");
+            final Map<String, Object> ppBtc = (Map<String, Object>) pp.get
+                ("btc");
+            final Double ppBtcPrice = (Double) ppBtc.get("price");
 
-            Map<String, Object> sf = (Map<String, Object>) json.get("sf");
-            Map<String, Object> sfBtc = (Map<String, Object>) sf.get("btc");
-            Double sfBtcPrice = (Double) sfBtc.get("price");
+            final Map<String, Object> sf = (Map<String, Object>) json.get("sf");
+            final Map<String, Object> sfBtc = (Map<String, Object>) sf.get
+                ("btc");
+            final Double sfBtcPrice = (Double) sfBtc.get("price");
 
-            Map<String, Object> mc = (Map<String, Object>) json.get("mc");
-            Map<String, Object> mcBtc = (Map<String, Object>) mc.get("btc");
-            Double mcBtcPrice = (Double) sfBtc.get("price");
+            final Map<String, Object> mc = (Map<String, Object>) json.get("mc");
+            final Map<String, Object> mcBtc = (Map<String, Object>) mc.get
+                ("btc");
+            final Double mcBtcPrice = (Double) sfBtc.get("price");
 
             ppPrice.set(new ExchangeRate(Fiat.parseFiat("EUR", ppBtcPrice
                 .toString())));
@@ -208,7 +213,7 @@ public class BitBoatActivity extends ActionBarActivity {
           }
 
           @Override
-          public void onFailure(Throwable t) {
+          public void onFailure(final Throwable t) {
             t.printStackTrace();
           }
         });
@@ -250,7 +255,7 @@ public class BitBoatActivity extends ActionBarActivity {
 
         final FutureCallback<Boolean> reEnableButtonCallback = new FutureCallback<Boolean>() {
             @Override
-            public void onSuccess(@Nullable Boolean result) {
+            public void onSuccess(final @Nullable Boolean result) {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -387,19 +392,21 @@ public class BitBoatActivity extends ActionBarActivity {
                                 addresses.add(getGAService().fundReceivingId("GA2nxNXvFENfGM9K27KckeGqNB2JTi"));
                                 Futures.addCallback(Futures.allAsList(addresses), new FutureCallback<List<String>>() {
                                     @Override
-                                    public void onSuccess(@Nullable List<String> result) {
+                                    public void onSuccess(final @Nullable
+                                        List<String> result) {
                                         nameValuePairs.add(new BasicNameValuePair("dest", result.get(0)));
                                         nameValuePairs.add(new BasicNameValuePair("ref", result.get(1)));
                                         try {
                                             post.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-                                        } catch (UnsupportedEncodingException e) {
+                                        } catch
+                                            (final UnsupportedEncodingException e) {
                                             throw new RuntimeException(e);
                                         }
                                         dialogFuture.set(true);
                                     }
 
                                     @Override
-                                    public void onFailure(Throwable t) {
+                                    public void onFailure(final Throwable t) {
                                         t.printStackTrace();
                                         Toast.makeText(BitBoatActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
                                         buyBtcButton.setProgress(0);
@@ -420,12 +427,12 @@ public class BitBoatActivity extends ActionBarActivity {
                 });
                 Futures.addCallback(confirmedHTTP, new FutureCallback<String>() {
                     @Override
-                    public void onSuccess(@Nullable String result) {
+                    public void onSuccess(final @Nullable String result) {
                         Map<String, Object> json = null;
                         try {
                             json = new MappingJsonFactory().getCodec().readValue(
                                     result, Map.class);
-                        } catch (IOException e) {
+                        } catch (final IOException e) {
                             throw new RuntimeException(e);
                         }
                         final String id = (String) json.get("id");
@@ -444,12 +451,13 @@ public class BitBoatActivity extends ActionBarActivity {
                         pending.add(id);
                         Futures.addCallback(getGAService().setAppearanceValue("pending_bitboat_ids", pending, false), new FutureCallback<Boolean>() {
                             @Override
-                            public void onSuccess(@Nullable Boolean result) {
+                            public void onSuccess(final @Nullable Boolean
+                                result) {
                                 updatePendingOrders();
                             }
 
                             @Override
-                            public void onFailure(Throwable t) {
+                            public void onFailure(final Throwable t) {
                                 t.printStackTrace();
                             }
                         });
