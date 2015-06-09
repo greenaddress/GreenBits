@@ -196,5 +196,6 @@
     <string name="txStatusCompleted">Completado</string>
     <string name="txStatusLoading">Cargando</string>
     <string name="twoFacGauthTextCode">O usted puede usar el siguiente código: %s. ¡Recuerde hacer una copia de seguridad!</string>
+    <string name="title_activity_mobile_operator_packages">Packages</string>
 
 </resources>

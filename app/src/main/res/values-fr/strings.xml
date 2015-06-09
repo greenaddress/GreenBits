@@ -197,5 +197,6 @@
     <string name="txStatusLoading">Envoyée</string>
     <string name="twoFacGauthTextCode">Or you can use the following code: %s. Remember to back it up!</string>
     <string name="copyAddress">Copy</string>
+    <string name="title_activity_mobile_operator_packages">Packages</string>
 
 </resources>

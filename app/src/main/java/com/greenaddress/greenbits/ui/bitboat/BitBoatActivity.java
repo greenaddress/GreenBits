@@ -115,7 +115,6 @@ public class BitBoatActivity extends ActionBarActivity {
         amountFiatEdit = (EditText) findViewById(R.id.amountFiatEditText);
 
         final String btcUnit = (String) getGAService().getAppearanceValue("unit");
-        final String country = getGAService().getCountry();
         final TextView bitcoinScale = (TextView) findViewById(R.id.bitcoinScaleText);
         final TextView bitcoinUnitText = (TextView) findViewById(R.id.bitcoinUnitText);
         bitcoinFormat = CurrencyMapper.mapBtcUnitToFormat(btcUnit);
@@ -127,7 +126,9 @@ public class BitBoatActivity extends ActionBarActivity {
         }
 
         final List<Map<String, Object>> paymentMethods = new ArrayList<>();
-        if (country.equals("IT")) {
+        final String country = getGAService().getCountry();
+
+       if (country.equals("IT")) {
             final Map<String, Object> superflash = new HashMap<>();
             final Map<String, Object> postepay = new HashMap<>();
             superflash.put("name", "Superflash");
@@ -154,6 +155,7 @@ public class BitBoatActivity extends ActionBarActivity {
                 new String[]{"name"},
                 new int[]{R.id.textView}
         ));
+
         methodOfPayment.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(final AdapterView<?> parent, final View
@@ -660,14 +662,14 @@ public class BitBoatActivity extends ActionBarActivity {
         (new AsyncTask<HttpUriRequest, String, String>() {
             @Override
             protected String doInBackground(final HttpUriRequest... request) {
-                HttpClient client = new DefaultHttpClient();
+                final HttpClient client = new DefaultHttpClient();
                 String responseStr = null;
-                HttpResponse response;
                 try {
-                    response = client.execute(request[0]);
-                    StatusLine statusLine = response.getStatusLine();
+                    final HttpResponse response = client.execute(request[0]);
+                    final StatusLine statusLine = response.getStatusLine();
                     if (statusLine.getStatusCode() == HttpStatus.SC_OK) {
-                        ByteArrayOutputStream out = new ByteArrayOutputStream();
+                        final ByteArrayOutputStream out = new
+                            ByteArrayOutputStream();
                         response.getEntity().writeTo(out);
                         responseStr = out.toString();
                         out.close();
@@ -675,7 +677,7 @@ public class BitBoatActivity extends ActionBarActivity {
                         response.getEntity().getContent().close();
                         throw new IOException(statusLine.getReasonPhrase());
                     }
-                } catch (IOException e) {
+                } catch (final IOException e) {
                     req.setException(e);
                 }
                 req.set(responseStr);

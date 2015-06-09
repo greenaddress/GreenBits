@@ -91,6 +91,9 @@ public class BitRefillPaymentActivity extends ActionBarActivity {
     setContentView(R.layout.activity_bit_refill_pay);
 
     final Intent intent = getIntent();
+
+    final String btcUnit = (String) getGAService().getAppearanceValue("unit");
+
     final String mobileNumber = intent.getExtras().getString("number");
     final String valuePackage = intent.getExtras().getString("valuePackage");
     final String operatorSlug = intent.getExtras().getString("operatorSlug");

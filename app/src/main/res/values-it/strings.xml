@@ -189,6 +189,7 @@
   <string name="txStatusExpired">Scaduto</string>
   <string name="txStatusCompleted">Completato</string>
   <string name="txStatusLoading">Caricando</string>
-    <string name="twoFacGauthTextCode">Or you can use the following code: %s. Remember to back it up!</string>
-    <string name="copyAddress">Copia</string>
+  <string name="twoFacGauthTextCode">Or you can use the following code: %s. Remember to back it up!</string>
+  <string name="copyAddress">Copia</string>
+  <string name="title_activity_mobile_operator_packages">Ricariche</string>
 </resources>
