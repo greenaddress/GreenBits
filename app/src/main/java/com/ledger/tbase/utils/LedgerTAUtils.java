@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileInputStream;
 
 import android.os.Environment;
-import android.util.Log;
 
 public class LedgerTAUtils {
 	
@@ -39,7 +38,6 @@ public class LedgerTAUtils {
 			return data;
 		}
 		catch(Exception e) {
-			e.printStackTrace();
 			return null;
 		}
 	}

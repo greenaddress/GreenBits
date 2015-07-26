@@ -21,6 +21,7 @@ import android.widget.TextView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.afollestad.materialdialogs.Theme;
+import nordpol.android.AndroidCard;
 import com.btchip.comm.BTChipTransport;
 import com.btchip.comm.android.BTChipTransportAndroid;
 import com.btchip.comm.android.BTChipTransportAndroidNFC;
@@ -214,7 +215,7 @@ public class RequestLoginActivity extends Activity implements Observer {
                 edit.setVisibility(View.GONE);
                 // not TREZOR, so must be BTChip
                 if (tag != null) {
-                    showPinDialog(IsoDep.get(tag));
+                    showPinDialog(tag);
                 } else {
                     UsbDevice device = getIntent().getParcelableExtra(UsbManager.EXTRA_DEVICE);
                     if (device != null) {
@@ -238,11 +239,11 @@ public class RequestLoginActivity extends Activity implements Observer {
         showPinDialog(device, null, -1);
     }
 
-    private void showPinDialog(final IsoDep device) {
-        showPinDialog(null, device, -1);
+    private void showPinDialog(final Tag tag) {
+        showPinDialog(null, tag, -1);
     }
 
-    private void showPinDialog(final UsbDevice device, final IsoDep isoDep, final int remainingAttempts) {
+    private void showPinDialog(final UsbDevice device, final Tag tag, final int remainingAttempts) {
         final SettableFuture<String> pinFuture = SettableFuture.create();
         RequestLoginActivity.this.runOnUiThread(new Runnable() {
             @Override
@@ -317,7 +318,13 @@ public class RequestLoginActivity extends Activity implements Observer {
             UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
             transport = BTChipTransportAndroid.open(manager, device);
         } else {
-            transport = new BTChipTransportAndroidNFC(isoDep);
+        	AndroidCard card = null;
+        	try {
+        		card = AndroidCard.get(tag);
+        	}
+        	catch(Exception e) {        		
+        	}
+            transport = new BTChipTransportAndroidNFC(card);
             transport.setDebug(true);
         }
         Futures.addCallback(getGAApp().onServiceConnected, new FutureCallback<Void>() {
@@ -341,7 +348,7 @@ public class RequestLoginActivity extends Activity implements Observer {
                                             // -1 means success
                                             return gaService.login(hwWallet);
                                         } else {
-                                            showPinDialog(device, isoDep, input.intValue());
+                                            showPinDialog(device, tag, input.intValue());
                                             return Futures.immediateFuture(null);
                                         }
                                     }

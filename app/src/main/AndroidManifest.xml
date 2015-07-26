@@ -140,11 +140,6 @@
             android:name=".BitBoatActivity"
             android:label="@string/title_activity_bit_boat" >
         </activity>
-        <activity
-            android:name="com.ledger.tbase.comm.LedgerTBounceActivity"
-            android:label="@string/app_name"
-            android:theme="@android:style/Theme.NoDisplay">
-        </activity>                
     </application>
 
 </manifest>

@@ -17,7 +17,10 @@ import com.afollestad.materialdialogs.Theme;
 import com.btchip.BTChipConstants;
 import com.btchip.BTChipDongle;
 import com.btchip.BTChipDongle.BTChipPublicKey;
+import com.btchip.comm.BTChipTransportFactory;
+import com.btchip.comm.BTChipTransportFactoryCallback;
 import com.btchip.utils.Dump;
+import com.btchip.utils.KeyUtils;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -29,16 +32,22 @@ import com.greenaddress.greenapi.LoginFailed;
 import com.greenaddress.greenapi.Network;
 import com.greenaddress.greenapi.LoginData;
 import com.ledger.tbase.comm.LedgerTransportTEEProxy;
+import com.ledger.tbase.comm.LedgerTransportTEEProxyFactory;
 
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.Callable;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class FirstScreenActivity extends ActionBarActivity implements Observer {
 	
 	private static final String NVM_PATH = "nvm.bin";
 	private static final String TAG = "GreenTee";
 	private static boolean tuiCall;
+	private BTChipTransportFactory transportFactory;
+	
+	private static final int CONNECT_TIMEOUT = 2000;
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
@@ -73,9 +82,9 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
                 startActivity(browserIntent);
             }
         });
-  
+           
         Log.d(TAG, "Create FirstScreenActivity : TUI " + tuiCall);
-        if (tuiCall) {
+        if (tuiCall || (transportFactory != null)) {
         	return;
         }
         
@@ -84,13 +93,46 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
         gaService.es.submit(new Callable<Object>() {
             @Override
             public Object call() {
-            	final LedgerTransportTEEProxy teeTransport = new LedgerTransportTEEProxy(getApplicationContext());
+            	transportFactory = new LedgerTransportTEEProxyFactory(FirstScreenActivity.this);
+            	Log.d(TAG, "Got proxy factory");
+            	final LedgerTransportTEEProxy teeTransport = (LedgerTransportTEEProxy)transportFactory.getTransport();
+            	Log.d(TAG, "Got transport");
             	byte[] nvm = teeTransport.loadNVM(NVM_PATH);
             	teeTransport.setDebug(true);
-            	teeTransport.setNVM(nvm);
-            	boolean teeResult = teeTransport.init();
-            	Log.d(TAG, "TEE init " + teeResult);
-            	if (teeResult) {
+            	if (nvm != null) {
+            		teeTransport.setNVM(nvm);
+            	}
+            	boolean initialized = false;
+				// Check if the TEE can be connected
+				final LinkedBlockingQueue<Boolean> waitConnected = new LinkedBlockingQueue<Boolean>(1);
+				Log.d(TAG, "Before connect call");
+				boolean result = transportFactory.connect(FirstScreenActivity.this, new BTChipTransportFactoryCallback() {
+
+					@Override
+					public void onConnected(boolean success) {
+						try {
+							waitConnected.put(success);
+						}
+						catch(InterruptedException e) {							
+						}						
+					}
+					
+				});
+				Log.d(TAG, "Connect call " + result);
+				if (result) {
+					try {
+						Log.d(TAG, "Waiting for TEE service connection");
+						initialized = waitConnected.poll(CONNECT_TIMEOUT, TimeUnit.MILLISECONDS);
+						Log.d(TAG, "TEE service connected " + initialized);
+					}
+					catch(InterruptedException e) {						
+					}
+					if (initialized) {
+						initialized = teeTransport.init();
+					}
+				}								            	
+            	Log.d(TAG, "TEE init " + initialized);
+            	if (initialized) {
             		final BTChipDongle dongle = new BTChipDongle(teeTransport, true);
             		// Prompt for use (or use immediately if an NVM file exists and the application is ready) 
             		// If ok, attempt setup, then verify PIN, then login to gait            		
@@ -118,7 +160,7 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
 		                        .theme(Theme.DARK)
 		                        .positiveText("OK")
 		                        .negativeText("CANCEL")
-		                        .callback(new MaterialDialog.SimpleCallback() {
+		                        .callback(new MaterialDialog.ButtonCallback() {
 		                        	@Override
 		                        	public void onPositive(MaterialDialog materialDialog) {
 		                        		proceedTEE(teeTransport, dongle, true);
@@ -258,7 +300,7 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
                             	}
                             	else {
                             		Log.d(TAG, "TEE signup");
-                            		return gaService.signup(new BTChipHWWallet(dongle), dongle.compressPublicKey(masterPublicKeyFixed.getPublicKey()), masterPublicKeyFixed.getChainCode(), dongle.compressPublicKey(loginPublicKeyFixed.getPublicKey()), loginPublicKeyFixed.getChainCode());
+                            		return gaService.signup(new BTChipHWWallet(dongle), KeyUtils.compressPublicKey(masterPublicKeyFixed.getPublicKey()), masterPublicKeyFixed.getChainCode(), KeyUtils.compressPublicKey(loginPublicKeyFixed.getPublicKey()), loginPublicKeyFixed.getChainCode());
                             	}
                             }
                         }), new FutureCallback<LoginData>() {
