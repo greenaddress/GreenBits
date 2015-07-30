@@ -94,9 +94,7 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
             @Override
             public Object call() {
             	transportFactory = new LedgerTransportTEEProxyFactory(FirstScreenActivity.this);
-            	Log.d(TAG, "Got proxy factory");
             	final LedgerTransportTEEProxy teeTransport = (LedgerTransportTEEProxy)transportFactory.getTransport();
-            	Log.d(TAG, "Got transport");
             	byte[] nvm = teeTransport.loadNVM(NVM_PATH);
             	teeTransport.setDebug(true);
             	if (nvm != null) {
@@ -105,7 +103,6 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
             	boolean initialized = false;
 				// Check if the TEE can be connected
 				final LinkedBlockingQueue<Boolean> waitConnected = new LinkedBlockingQueue<Boolean>(1);
-				Log.d(TAG, "Before connect call");
 				boolean result = transportFactory.connect(FirstScreenActivity.this, new BTChipTransportFactoryCallback() {
 
 					@Override
@@ -118,12 +115,9 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
 					}
 					
 				});
-				Log.d(TAG, "Connect call " + result);
 				if (result) {
 					try {
-						Log.d(TAG, "Waiting for TEE service connection");
 						initialized = waitConnected.poll(CONNECT_TIMEOUT, TimeUnit.MILLISECONDS);
-						Log.d(TAG, "TEE service connected " + initialized);
 					}
 					catch(InterruptedException e) {						
 					}
