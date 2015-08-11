@@ -39,6 +39,7 @@ public class LedgerTransportTEEProxy implements BTChipTransport {
 	public LedgerTransportTEEProxy(Context context, ILedgerWalletService service) {
 		this.context = context;
 		this.service = service;
+		nvm = new byte[0];
 	}
 	
 	public LedgerTransportTEEProxy(Context context) {

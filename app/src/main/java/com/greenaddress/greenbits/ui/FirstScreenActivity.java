@@ -93,7 +93,8 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
         gaService.es.submit(new Callable<Object>() {
             @Override
             public Object call() {
-            	transportFactory = new LedgerTransportTEEProxyFactory(FirstScreenActivity.this);
+            	//transportFactory = new LedgerTransportTEEProxyFactory(FirstScreenActivity.this);
+            	transportFactory = new LedgerTransportTEEProxyFactory(getApplicationContext());
             	final LedgerTransportTEEProxy teeTransport = (LedgerTransportTEEProxy)transportFactory.getTransport();
             	byte[] nvm = teeTransport.loadNVM(NVM_PATH);
             	teeTransport.setDebug(true);
@@ -129,7 +130,7 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
             	if (initialized) {
             		final BTChipDongle dongle = new BTChipDongle(teeTransport, true);
             		// Prompt for use (or use immediately if an NVM file exists and the application is ready) 
-            		// If ok, attempt setup, then verify PIN, then login to gait            		
+            		// If ok, attempt setup, then verify PIN, then login to gait backend            		
             		boolean teeReady = false;
             		if (nvm != null) {
             			try {
@@ -145,8 +146,8 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
 							@Override
 							public void run() {
 		                        new MaterialDialog.Builder(FirstScreenActivity.this)
-		                        .title("Ledger Wallet T available")
-		                        .content("Ledger Wallet Trustlet is available - do you want to use it ?")
+		                        .title("Ledger Wallet Trustlet")
+		                        .content("Ledger Wallet Trustlet is available - do you want to use it to register ?")
 		                        .positiveColorRes(R.color.accent)
 		                        .negativeColorRes(R.color.white)
 		                        .titleColorRes(R.color.white)
@@ -191,7 +192,8 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
             	BTChipPublicKey masterPublicKey = null, loginPublicKey = null;
             	Log.d(TAG, "TEE setup " + setup);
             	if (setup) {
-            		try {            			
+            		try {
+            			// Not setup ? Create the wallet
             			dongle.setup(new BTChipDongle.OperationMode[] { BTChipDongle.OperationMode.WALLET}, 
             					new BTChipDongle.Feature[] { BTChipDongle.Feature.RFC6979 }, // TEE doesn't need NO_2FA_P2SH
             					Network.NETWORK.getAddressHeader(), 
@@ -199,15 +201,11 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
             					new byte[4], null,
             					null, 
             					null, null);
+            			// Save the encrypted image
             			transport.writeNVM(NVM_PATH, transport.requestNVM().get());
             		}
             		catch(Exception e) {
             			Log.d(TAG, "Setup exception", e);
-            			try {
-            				transport.writeNVM(NVM_PATH, transport.requestNVM().get());
-            			}
-            			catch(Exception e1) {            				
-            			}
             			try {
             				transport.close();
             			}
@@ -223,6 +221,8 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
             			return null;
             		}
             		// FIXME reopen transport - more stable
+            		// (Should not be necessary anyway with the new transport API)
+            		/*
             		try {
             			byte[] nvm = transport.requestNVM().get();
             			transport.close();
@@ -234,9 +234,11 @@ public class FirstScreenActivity extends ActionBarActivity implements Observer {
             			tuiCall = false;
             			return null;
             		}
+            		*/
             	}
             	// Verify the PIN
             	try {
+            		// TODO : handle terminated PIN
             		Log.d(TAG, "verify pin");
             		dongle.verifyPin(new byte[4]);
             		Log.d(TAG, "write NVM after verify pin");

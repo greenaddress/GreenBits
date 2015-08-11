@@ -823,6 +823,10 @@ public class GaService extends Service {
     public String getMnemonics() {
         return client.getMnemonics();
     }
+    
+    public WalletClient getClient() {
+    	return client;
+    }
 
     public ListenableFuture<LoginData> pinLogin(final PinData pinData, final String pin) {
         latestAddresses = new HashMap<>();

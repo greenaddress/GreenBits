@@ -297,6 +297,14 @@ public class BTChipDongle implements BTChipConstants {
 	public boolean hasScreenSupport() {
 		return supportScreen;
 	}
+	
+	public BTChipTransport getTransport() {
+		return transport;
+	}
+	
+	public void setTransport(BTChipTransport transport) {
+		this.transport = transport;
+	}
 		
 	private byte[] exchange(byte[] apdu) throws BTChipException {
 		byte[] response;

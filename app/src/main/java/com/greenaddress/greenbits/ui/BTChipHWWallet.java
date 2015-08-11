@@ -1,6 +1,8 @@
 package com.greenaddress.greenbits.ui;
 
 
+import android.util.Log;
+
 import com.btchip.BTChipDongle;
 import com.btchip.BTChipException;
 import com.btchip.BitcoinTransaction;
@@ -44,7 +46,10 @@ public class BTChipHWWallet implements ISigningWallet {
     private BTChipDongle dongle;
     private RequestLoginActivity loginActivity;
     private String pin;
+    private DeterministicKey cachedPubkey;
     private List<Integer> addrn = new LinkedList<>();
+    
+    private static final String TAG = "BTChipHWWallet";
 
     private BTChipHWWallet(BTChipDongle dongle, RequestLoginActivity loginActivity, String pin, List<Integer> addrn) {
         this.dongle = dongle;
@@ -68,6 +73,7 @@ public class BTChipHWWallet implements ISigningWallet {
                 try {
                     dongle.verifyPin(BTChipHWWallet.this.pin.getBytes());
                     remainingAttemptsFuture.set(new Integer(-1));  // -1 means success
+                    internalGetPubKey(); // cache public key
                 } catch (BTChipException e) {
                     if (e.toString().indexOf("63c") != -1) {
                         remainingAttemptsFuture.set(
@@ -153,17 +159,25 @@ public class BTChipHWWallet implements ISigningWallet {
         return es.submit(new Callable<DeterministicKey>() {
             @Override
             public DeterministicKey call() throws Exception {
-                BTChipDongle.BTChipPublicKey pubKey = dongle.getWalletPublicKey(getPath());
-                ECKey uncompressed = ECKey.fromPublicOnly(pubKey.getPublicKey());
-                DeterministicKey retVal = new DeterministicKey(
-                        new ImmutableList.Builder<ChildNumber>().build(),
-                        pubKey.getChainCode(),
-                        uncompressed.getPubKeyPoint(),
-                        null, null
-                );
-                return retVal;
+            	return internalGetPubKey();
             }
         });
+    }
+    
+    private DeterministicKey internalGetPubKey() throws BTChipException {
+    	if (cachedPubkey != null) {
+    		return cachedPubkey;
+    	}
+        BTChipDongle.BTChipPublicKey pubKey = dongle.getWalletPublicKey(getPath());
+        ECKey uncompressed = ECKey.fromPublicOnly(pubKey.getPublicKey());
+        DeterministicKey retVal = new DeterministicKey(
+                new ImmutableList.Builder<ChildNumber>().build(),
+                pubKey.getChainCode(),
+                uncompressed.getPubKeyPoint(),
+                null, null
+        );
+        cachedPubkey = retVal;
+        return retVal;    	
     }
 
     @Override
@@ -216,5 +230,37 @@ public class BTChipHWWallet implements ISigningWallet {
         LinkedList<Integer> addrn_child = new LinkedList<>(addrn);
         addrn_child.add(childNumber.getI());
         return new BTChipHWWallet(dongle, loginActivity, pin, addrn_child);
+    }
+    
+    public BTChipDongle getDongle() {
+    	return dongle;
+    }
+    
+    public boolean checkConnected() {
+    	try {
+    		Log.d(TAG, "Connection check");
+    		dongle.getFirmwareVersion();
+    		Log.d(TAG, "Connection ok");
+    		return true;
+    	}
+    	catch(Exception e) {
+    		Log.d(TAG, "Connection not connected");
+    		try {
+    			dongle.getTransport().close();
+    			Log.d(TAG, "Connection closed");
+    		}
+    		catch(Exception e1) {    			
+    		}
+    		return false;
+    	}
+    }
+    
+    public void setTransport(BTChipTransport transport) {
+    	dongle.setTransport(transport);
+    	try {
+    		dongle.verifyPin(BTChipHWWallet.this.pin.getBytes());
+    	}
+    	catch(Exception e) {    		
+    	}
     }
 }

@@ -33,23 +33,50 @@ import com.btchip.utils.FutureUtils;
 public class BTChipTransportAndroidNFC implements BTChipTransport {
 	
 	public static final int DEFAULT_TIMEOUT = 30000;
-	
+	private static final byte DEFAULT_AID[] = Dump.hexToBin("a0000006170054bf6aa94901");
+	                                                            		
 	private AndroidCard card;
 	private int timeout;
-	private boolean debug;	
+	private boolean debug;
+	private byte[] aid;
+	private boolean selected;
 	
 	public BTChipTransportAndroidNFC(AndroidCard card, int timeout) {
 		this.card = card;
 		this.timeout = timeout;
 		card.setTimeout(timeout);
+		aid = DEFAULT_AID;
 	}
 	
 	public BTChipTransportAndroidNFC(AndroidCard card) {
 		this(card, DEFAULT_TIMEOUT);
 	}
 	
+	public void setAID(byte[] aid) {
+		this.aid = aid;
+	}
+	
 	@Override
 	public Future<byte[]> exchange(byte[] command) throws BTChipException {
+		if (!selected) {
+			byte[] selectCommand = new byte[aid.length + 5];
+			selectCommand[0] = (byte)0x00;
+			selectCommand[1] = (byte)0xA4;
+			selectCommand[2] = (byte)0x04;
+			selectCommand[3] = (byte)0x00;
+			selectCommand[4] = (byte)aid.length;
+			System.arraycopy(aid, 0, selectCommand, 5, aid.length);
+			try {
+				exchangeInternal(selectCommand);
+			}
+			catch(Exception e) {				
+			}
+			selected = true;
+		}
+		return exchangeInternal(command);
+	}
+	
+	public Future<byte[]> exchangeInternal(byte[] command) throws BTChipException {		
 		try {
 			if (!card.isConnected()) {
 				card.connect();

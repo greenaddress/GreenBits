@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.Html;
@@ -34,14 +35,21 @@ import android.widget.Toast;
 
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.afollestad.materialdialogs.Theme;
+import com.btchip.comm.BTChipTransport;
+import com.btchip.comm.android.BTChipTransportAndroidNFC;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SettableFuture;
 import com.greenaddress.greenapi.PreparedTransaction;
 import com.greenaddress.greenbits.ConnectivityObservable;
 import com.greenaddress.greenbits.GaService;
+
+import nordpol.android.AndroidCard;
+import nordpol.android.OnDiscoveredTagListener;
+import nordpol.android.TagDispatcher;
 
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.uri.BitcoinURI;
@@ -64,7 +72,7 @@ import javax.annotation.Nullable;
 
 import de.schildbach.wallet.ui.ScanActivity;
 
-public class SendFragment extends GAFragment {
+public class SendFragment extends GAFragment implements OnDiscoveredTagListener {
 
     private static final String TAG = "SendFragment";
     private Dialog mSummary;
@@ -91,7 +99,14 @@ public class SendFragment extends GAFragment {
     private int curSubaccount;
     private Observer curBalanceObserver;
     private boolean pausing;
-
+    
+    TagDispatcher tagDispatcher;
+    Tag tag;
+    SettableFuture<Boolean> readyFuture;
+    MaterialDialog nfcWaitDialog;
+    
+    private static final byte DUMMY_COMMAND[] = { (byte)0xE0, (byte)0xC4, (byte)0x00, (byte)0x00, (byte)0x00 };    
+    
     public void showTransactionSummary(final String method, final Coin fee, final Coin amount, final String recipient, final PreparedTransaction prepared) {
         Log.i(TAG, "showTransactionSummary( params " + method + " " + fee + " " + amount + " " + recipient + ")");
         final View inflatedLayout = getActivity().getLayoutInflater().inflate(R.layout.dialog_new_transaction, null, false);
@@ -157,40 +172,76 @@ public class SendFragment extends GAFragment {
                         if (twoFacData != null) {
                             twoFacData.put("code", newTx2FACodeText.getText().toString());
                         }
-                        final ListenableFuture<String> sendFuture = getGAService().signAndSendTransaction(prepared, twoFacData);
-                        Futures.addCallback(sendFuture, new FutureCallback<String>() {
-                            @Override
-                            public void onSuccess(@Nullable final String result) {
-                                if (fromIntentURI) {
-                                	if (getActivity() != null) {
-                                		getActivity().finish();
-                                	}
-                                    return;
-                                }
-                                getActivity().runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        // FIXME: Add notification with "Transaction sent"?
-                                        amountEdit.setText("");
-                                        recipientEdit.setText("");
-                                        noteIcon.setText(Html.fromHtml("&#xf040"));
-                                        noteText.setText("");
-                                        noteText.setVisibility(View.INVISIBLE);
-                                    }
-                                });
-                            }
+                        readyFuture = SettableFuture.create();
+                        if (getGAService().getClient().getHdWallet() instanceof BTChipHWWallet) {
+                        	boolean connected = true;
+                        	// Handle disconnected NFC before signing
+                        	BTChipHWWallet btchipWallet = (BTChipHWWallet)getGAService().getClient().getHdWallet();
+                        	if (btchipWallet.getDongle().getTransport() instanceof BTChipTransportAndroidNFC) {
+                        		connected = btchipWallet.checkConnected();
+                        	}
+                        	if (!connected) {
+                    			nfcWaitDialog = new MaterialDialog.Builder(getActivity())
+                    			.title("BTChip")
+                    			.content("Please tap card")
+                    			.build();
+                    			nfcWaitDialog.show();                        		
+                        	}
+                        	else {
+                        		readyFuture.set(true);
+                        	}
+                        }
+                        else {
+                        	readyFuture.set(true);
+                        }
+                        Futures.addCallback(readyFuture, new FutureCallback<Boolean>() {
 
+                            @Override
+                            public void onSuccess(@Nullable final Boolean result) {
+
+                                final ListenableFuture<String> sendFuture = getGAService().signAndSendTransaction(prepared, twoFacData);
+                                Futures.addCallback(sendFuture, new FutureCallback<String>() {
+                                    @Override
+                                    public void onSuccess(@Nullable final String result) {
+                                        if (fromIntentURI) {
+                                        	if (getActivity() != null) {
+                                        		getActivity().finish();
+                                        	}
+                                            return;
+                                        }
+                                        getActivity().runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                // FIXME: Add notification with "Transaction sent"?
+                                                amountEdit.setText("");
+                                                recipientEdit.setText("");
+                                                noteIcon.setText(Html.fromHtml("&#xf040"));
+                                                noteText.setText("");
+                                                noteText.setVisibility(View.INVISIBLE);
+                                            }
+                                        });
+                                    }
+
+                                    @Override
+                                    public void onFailure(final Throwable t) {
+                                        t.printStackTrace();
+                                        getActivity().runOnUiThread(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                Toast.makeText(getActivity(), t.getMessage(), Toast.LENGTH_LONG).show();
+                                            }
+                                        });
+                                    }
+                                }, getGAService().es);
+                            	
+                            	
+                            }
+                            
                             @Override
                             public void onFailure(final Throwable t) {
                                 t.printStackTrace();
-                                getActivity().runOnUiThread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        Toast.makeText(getActivity(), t.getMessage(), Toast.LENGTH_LONG).show();
-                                    }
-                                });
-                            }
-                        }, getGAService().es);
+                            }                                                    	                        	
+                        });
                     }
 
                     @Override
@@ -297,6 +348,8 @@ public class SendFragment extends GAFragment {
         if (savedInstanceState != null) {
             pausing = savedInstanceState.getBoolean("pausing");
         }
+        
+        tagDispatcher = TagDispatcher.get(getActivity(), this);
 
         rootView = inflater.inflate(R.layout.fragment_send, container, false);
 
@@ -910,12 +963,14 @@ public class SendFragment extends GAFragment {
     public void onPause() {
         super.onPause();
         pausing = true;
+        tagDispatcher.disableExclusiveNfc();
     }
 
     @Override
     public void onStart() {
         super.onStart();
         pausing = false;
+        tagDispatcher.enableExclusiveNfc();
     }
 
     @Override
@@ -933,4 +988,53 @@ public class SendFragment extends GAFragment {
             mTwoFactor.dismiss();
         }
     }
+    
+    private BTChipTransport getTransport(Tag t) {
+    	BTChipTransport transport = null;
+		if (t != null) {
+			AndroidCard card = null;
+			Log.d(TAG, "Start checking NFC transport");
+			try {
+				card = AndroidCard.get(t);
+				transport = new BTChipTransportAndroidNFC(card);
+                transport.setDebug(true);                            		                				
+				transport.exchange(DUMMY_COMMAND).get();
+				Log.d(TAG, "NFC transport checked");
+			}
+        	catch(Exception e) {
+        		Log.d(TAG, "Tag was lost", e);
+        		if (card != null) {
+        			try {
+        				transport.close();
+        			}
+        			catch(Exception e1) {        				
+        			}
+        			transport = null;
+        		}
+        	}                            	
+		}
+		return transport;    	
+    }
+    
+    @Override
+    public void tagDiscovered(Tag t) {    	
+    	Log.d(TAG, "tagDiscovered " + t);
+    	this.tag = t;
+    	if ((readyFuture != null) && (nfcWaitDialog != null)) {
+    		BTChipTransport transport = getTransport(t);
+    		if (transport != null) {
+    			BTChipHWWallet btchipWallet = (BTChipHWWallet)getGAService().getClient().getHdWallet();
+    			btchipWallet.setTransport(transport);
+    			readyFuture.set(true);
+    			if (nfcWaitDialog != null) {
+    				getActivity().runOnUiThread(new Runnable() {
+    					@Override
+    					public void run() {
+    						nfcWaitDialog.hide();    							
+    					}
+    				});    					
+    			}
+    		}
+    	}
+    }    
 }
