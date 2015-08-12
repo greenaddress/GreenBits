@@ -228,18 +228,25 @@ public class GaService extends Service {
             startSpvAfterInit = true;
             return;
         }
-        Futures.addCallback(peerGroup.startAsync(), new FutureCallback<Object>() {
+     /*   Futures.addCallback(peerGroup.startAsync(), new FutureCallback<Object>() {
             @Override
             public void onSuccess(@Nullable Object result) {
-                peerGroup.startBlockChainDownload(new DownloadProgressTracker() {
+                peerGroup.startBlockChainDownload(new DownloadProgressTracker() {*/
+
+        Futures.addCallback(peerGroup.startAsync(), new FutureCallback<Object>() {
+            @Override
+            public void onSuccess(final @Nullable Object result) {
+                peerGroup.startBlockChainDownload(new DownloadProgressTracker()
+                    {
                     @Override
-                    public void onChainDownloadStarted(Peer peer, int blocksLeft) {
+                    public void onChainDownloadStarted(final Peer peer,
+                        final int blocksLeft) {
                         isSpvSyncing = true;
                         spvBlocksLeft = blocksLeft;
                     }
 
-                    @Override
-                    public void onBlocksDownloaded(Peer peer, Block block, @Nullable FilteredBlock filteredBlock, int blocksLeft) {
+                    public void onBlocksDownloaded(final Peer peer, final Block
+                        block, final int blocksLeft) {
                         spvBlocksLeft = blocksLeft;
                     }
 
@@ -247,7 +254,7 @@ public class GaService extends Service {
             }
 
             @Override
-            public void onFailure(Throwable t) {
+            public void onFailure(final Throwable t) {
                 t.printStackTrace();
             }
         });
@@ -534,7 +541,9 @@ public class GaService extends Service {
     }
 
     private void setUpSPV() {
-        File blockChainFile = new File(getDir("blockstore_" + receivingId, Context.MODE_PRIVATE), "blockchain.spvchain");
+        final File blockChainFile = new File(getDir(String
+            .format("blockstore_%s", receivingId), Context.MODE_PRIVATE),
+            "blockchain.spvchain");
 
         try {
             blockStore = new SPVBlockStore(Network.NETWORK, blockChainFile);
@@ -549,14 +558,14 @@ public class GaService extends Service {
             if (Network.NETWORK.getId().equals(NetworkParameters.ID_REGTEST)) {
                 try {
                     peerGroup.addAddress(new PeerAddress(InetAddress.getByName("192.168.56.1"), 19000));
-                } catch (UnknownHostException e) {
+                } catch (final UnknownHostException e) {
                     e.printStackTrace();
                 }
                 peerGroup.setMaxConnections(1);
             } else {
                 peerGroup.addPeerDiscovery(new DnsDiscovery(Network.NETWORK));
             }
-        } catch (BlockStoreException e) {
+        } catch (final BlockStoreException e) {
             e.printStackTrace();
         }
 
@@ -565,25 +574,34 @@ public class GaService extends Service {
     private BlockChainListener makeBlockChainListener() {
         blockChainListener = new BlockChainListener() {
             @Override
-            public void notifyNewBestBlock(StoredBlock block) throws VerificationException {
+            public void notifyNewBestBlock(final StoredBlock block) throws
+                VerificationException {
 
             }
 
             @Override
-            public void reorganize(StoredBlock splitPoint, List<StoredBlock> oldBlocks, List<StoredBlock> newBlocks) throws VerificationException {
+            public void reorganize(final StoredBlock splitPoint,
+                final List<StoredBlock> oldBlocks,
+                final List<StoredBlock> newBlocks)
+                throws VerificationException {
 
             }
 
             @Override
-            public boolean isTransactionRelevant(Transaction tx) throws ScriptException {
+            public boolean isTransactionRelevant(final Transaction tx) throws
+                ScriptException {
                 return unspentOutputsOutpoints.keySet().contains(tx.getHash());
             }
 
             @Override
-            public void receiveFromBlock(Transaction tx, StoredBlock block, AbstractBlockChain.NewBlockType blockType, int relativityOffset) throws VerificationException {
+            public void receiveFromBlock(final Transaction tx,
+                final StoredBlock block,
+                final AbstractBlockChain.NewBlockType blockType,
+                final int relativityOffset) throws VerificationException {
                 // FIXME: later spent outputs can be purged
-                SharedPreferences verified_utxo = getSharedPreferences("verified_utxo_" + receivingId, MODE_PRIVATE);
-                SharedPreferences.Editor editor = verified_utxo.edit();
+                final SharedPreferences verified_utxo = getSharedPreferences
+                    ("verified_utxo_" + receivingId, MODE_PRIVATE);
+                final SharedPreferences.Editor editor = verified_utxo.edit();
                 editor.putBoolean(tx.getHash().toString(), true);
                 editor.apply();
                 addUtxoToValues(tx.getHash());
@@ -592,10 +610,14 @@ public class GaService extends Service {
             }
 
             @Override
-            public boolean notifyTransactionIsInBlock(Sha256Hash txHash, StoredBlock block, AbstractBlockChain.NewBlockType blockType, int relativityOffset) throws VerificationException {
+            public boolean notifyTransactionIsInBlock(final Sha256Hash txHash,
+                final StoredBlock block, final AbstractBlockChain.NewBlockType
+                blockType, final int relativityOffset) throws
+                VerificationException {
                 // FIXME: later spent outputs can be purged
-                SharedPreferences verified_utxo = getSharedPreferences("verified_utxo_" + receivingId, MODE_PRIVATE);
-                SharedPreferences.Editor editor = verified_utxo.edit();
+                final SharedPreferences verified_utxo = getSharedPreferences
+                    ("verified_utxo_" + receivingId, MODE_PRIVATE);
+                final SharedPreferences.Editor editor = verified_utxo.edit();
                 editor.putBoolean(txHash.toString(), true);
                 editor.apply();
                 addUtxoToValues(txHash);
@@ -607,7 +629,8 @@ public class GaService extends Service {
         return blockChainListener;
     }
 
-    private void addUtxoToValues(final TransactionOutPoint txOutpoint, long subaccount, Coin addValue) {
+    private void addUtxoToValues(final TransactionOutPoint txOutpoint,
+        final long subaccount, final Coin addValue) {
         if (countedUtxoValues.keySet().contains(txOutpoint)) return;
         countedUtxoValues.put(txOutpoint, addValue);
         if (verifiedBalancesCoin.get(subaccount) == null) {
@@ -624,7 +647,8 @@ public class GaService extends Service {
         final List<Long> changedSubaccounts = new ArrayList<>();
         boolean missing = false;
         for (final Long outpoint : unspentOutputsOutpoints.get(txHash)) {
-            String outPointStr = txHashStr + ":" + outpoint;
+           final  String outPointStr = String.format("%s:%s", txHashStr,
+              outpoint);
             if (getSharedPreferences("verified_utxo_spendable_value_" + receivingId, MODE_PRIVATE).getLong(outPointStr, -1) != -1) {
                 final long value = getSharedPreferences("verified_utxo_spendable_value_" + receivingId, MODE_PRIVATE).getLong(outPointStr, -1);
                 final TransactionOutPoint txOutpoint = new TransactionOutPoint(Network.NETWORK, outpoint, txHash);
