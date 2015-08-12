@@ -228,10 +228,6 @@ public class GaService extends Service {
             startSpvAfterInit = true;
             return;
         }
-     /*   Futures.addCallback(peerGroup.startAsync(), new FutureCallback<Object>() {
-            @Override
-            public void onSuccess(@Nullable Object result) {
-                peerGroup.startBlockChainDownload(new DownloadProgressTracker() {*/
 
         Futures.addCallback(peerGroup.startAsync(), new FutureCallback<Object>() {
             @Override
