@@ -120,7 +120,7 @@ public class GaService extends Service {
     private boolean spvWiFiDialogShown = false;
 
     private boolean reconnect = true, isSpvSyncing = false, startSpvAfterInit = false, syncStarted = false;
-
+    private boolean spvShouldRunOnReconnect = false;
     // cache
     private ListenableFuture<List<List<String>>> currencyExchangePairs;
     private Map<Long, ListenableFuture<QrBitmap>> latestAddresses;
@@ -421,11 +421,18 @@ public class GaService extends Service {
     void reconnect() {
         Log.i(TAG, "Submitting reconnect after " + reconnectTimeout);
         onConnected = client.connect();
+
         connectionObservable.setState(ConnectivityObservable.State.CONNECTING);
 
         Futures.addCallback(onConnected, new FutureCallback<Void>() {
             @Override
             public void onSuccess(@Nullable final Void result) {
+                if (spvShouldRunOnReconnect) {
+                    setUpSPV();
+                    startSpvSync();
+                    spvShouldRunOnReconnect = false;
+                }
+
                 connectionObservable.setState(ConnectivityObservable.State.CONNECTED);
                 Log.i(TAG, "Success CONNECTED callback");
                 triggerOnFullyConnected.set(null);
@@ -516,8 +523,13 @@ public class GaService extends Service {
             public void onConnectionClosed(final int code) {
                 gaDeterministicKeys = null;
 
-                stopSPVSync();
-                tearDownSPV();
+                //If we get here without a proper SPV shutdown
+                //this means we need to spin back up on re-connect
+                if (peerGroup != null && isPeerGroupRunning()) {
+                    spvShouldRunOnReconnect = true;
+                    stopSPVSync();
+                    tearDownSPV();
+                }
 
                 if (code == 4000) {
                     connectionObservable.setForcedLoggedOut();
@@ -981,6 +993,8 @@ public class GaService extends Service {
     }
 
     public void disconnect(final boolean reconnect) {
+        stopSPVSync();
+        tearDownSPV();
         this.reconnect = reconnect;
         for (Long key : balanceObservables.keySet()) {
             balanceObservables.get(key).deleteObservers();
