@@ -106,12 +106,7 @@ public class BTChipDongle implements BTChipConstants {
 
 		@Override
 		public String toString() {
-			return "Address " +
-					address +
-					" public key " +
-					Dump.dump(publicKey) +
-					" chaincode " +
-					Dump.dump(chainCode);
+			return String.format("Address %s public key %s chaincode %s", address, Dump.dump(publicKey), Dump.dump(chainCode);
 		}
 	}
 	
@@ -133,10 +128,7 @@ public class BTChipDongle implements BTChipConstants {
 		
 		@Override
 		public String toString() {
-			return "Signature " +
-					Dump.dump(signature) +
-					" y parity " +
-					yParity;
+			return String.format("Signature %s y parity %s", Dump.dump(signature), yParity);
 		}
 	}
 	
@@ -168,9 +160,7 @@ public class BTChipDongle implements BTChipConstants {
 		
 		@Override
 		public String toString() {
-			return String.valueOf(major) + '.' + minor + '.' + patch +
-					" compressed keys " +
-					compressedKeys;
+			return String.format("%s.%s.%s compressed keys %b", major,  minor, patch, compressedKeys);
 		}
 	}
 	
@@ -197,8 +187,7 @@ public class BTChipDongle implements BTChipConstants {
 
 		@Override
 		public String toString() {
-			return "Value " + Dump.dump(value) +
-					" trusted " + trusted;
+			return String.format("Value %s trusted %b", Dump.dump(value), trusted);
 		}
 	}
 
@@ -223,8 +212,7 @@ public class BTChipDongle implements BTChipConstants {
 		
 		@Override
 		public String toString() {
-			return "Value " + Dump.dump(value) +
-					" confirmation type " + userConfirmation.toString();
+			return String.format("Value %s confirmation type %s", Dump.dump(value), userConfirmation);
 		}
 	}
 	
@@ -266,8 +254,7 @@ public class BTChipDongle implements BTChipConstants {
 		
 		@Override
 		public String toString() {
-			return super.toString() +
-					" screen data " + Dump.dump(screenInfo);
+			return String.format("%s screen data %s", super.toString(), Dump.dump(screenInfo));
 		}
 	}
 		
