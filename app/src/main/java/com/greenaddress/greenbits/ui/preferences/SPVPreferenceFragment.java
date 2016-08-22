@@ -119,7 +119,7 @@ public class SPVPreferenceFragment extends GAPreferenceFragment
 
         for (final String peer: peers.split(","))
             if (isBadAddress(peer))
-                return true;
+                return false;
 
         if (peers.toLowerCase().contains(".onion")) {
             // Tor address
@@ -150,9 +150,7 @@ public class SPVPreferenceFragment extends GAPreferenceFragment
             return onSPVEnabledChanged((Boolean) newValue);
         if (preference == mSPVSyncOnMobile)
             return onSPVSyncOnMobileChanged((Boolean) newValue);
-        if (preference == mTrustedPeer)
-            return onTrustedPeerChange((String) newValue);
-        return false;
+        return preference == mTrustedPeer && onTrustedPeerChange((String) newValue);
     }
 
     @Override
