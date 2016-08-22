@@ -150,9 +150,7 @@ public class SPVPreferenceFragment extends GAPreferenceFragment
             return onSPVEnabledChanged((Boolean) newValue);
         if (preference == mSPVSyncOnMobile)
             return onSPVSyncOnMobileChanged((Boolean) newValue);
-        if (preference == mTrustedPeer)
-            return onTrustedPeerChange((String) newValue);
-        return false;
+        return preference == mTrustedPeer && onTrustedPeerChange((String) newValue);
     }
 
     @Override
