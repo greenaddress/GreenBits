@@ -121,6 +121,7 @@ public class GaService extends Service implements INotificationHandler {
 
     private final SparseArray<Fiat> mFiatBalances = new SparseArray<>();
     private float mFiatRate;
+    private SparseArray<Map<?,?>> mTxList = new SparseArray<>();
     private Map<?, ?> mTwoFactorConfig;
     private final GaObservable mTwoFactorConfigObservable = new GaObservable();
     private String mDeviceId;
@@ -307,6 +308,7 @@ public class GaService extends Service implements INotificationHandler {
     @Override
     public void onNewBlock(final int blockHeight) {
         Log.i(TAG, "onNewBlock");
+        mTxList.clear();
         mSPV.onNewBlock(blockHeight);
         mNewTxObservable.doNotify();
     }
@@ -314,6 +316,8 @@ public class GaService extends Service implements INotificationHandler {
     @Override
     public void onNewTransaction(final int[] affectedSubAccounts) {
         Log.i(TAG, "onNewTransaction");
+        for (final int subAccount : affectedSubAccounts)
+            mTxList.remove(subAccount);
         mSPV.updateUnspentOutputs();
         mNewTxObservable.doNotify();
         for (final int subAccount : affectedSubAccounts)
@@ -331,6 +335,7 @@ public class GaService extends Service implements INotificationHandler {
         mState.setForcedLogout(code == 4000);
         mState.transitionTo(ConnState.DISCONNECTED);
 
+        mTxList.clear();
         mCoinBalances.clear();
         mFiatBalances.clear();
         mTwoFactorConfig.clear();
@@ -546,11 +551,16 @@ public class GaService extends Service implements INotificationHandler {
     }
 
     public ListenableFuture<Map<?, ?>> getMyTransactions(final int subAccount) {
+        final Map<?,?> txList = mTxList.get(subAccount);
+        if (txList != null)
+            return (ListenableFuture) Futures.immediateFuture(txList);
+
         return mExecutor.submit(new Callable<Map<?, ?>>() {
             @Override
             public Map<?, ?> call() throws Exception {
                 final Map<?, ?> result = mClient.getMyTransactions(subAccount);
                 setCurrentBlock((Integer) result.get("cur_block"));
+                mTxList.put(subAccount, result);
                 return result;
             }
         });
