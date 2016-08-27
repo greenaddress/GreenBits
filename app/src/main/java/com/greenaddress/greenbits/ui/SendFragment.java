@@ -220,11 +220,11 @@ public class SendFragment extends SubaccountFragment {
         } else {
             recipientEdit.setText(URI.getAddress().toString());
             if (URI.getAmount() != null) {
-                CB.after(service.getMapBalance(curSubaccount), new CB.Toast<Map<String, String>>(gaActivity) {
+                CB.after(service.getFiatRate(), new CB.Toast<Float>(gaActivity) {
                     @Override
-                    public void onUiSuccess(final Map<String, String> notused) {
+                    public void onUiSuccess(final Float rate) {
                         amountEdit.setText(bitcoinFormat.noCode().format(URI.getAmount()));
-                        convertBtcToFiat(service.getFiatRate());
+                        convertBtcToFiat(rate);
                         amountEdit.setEnabled(false);
                         amountFiatEdit.setEnabled(false);
                     }
@@ -581,7 +581,12 @@ public class SendFragment extends SubaccountFragment {
     }
 
     private void convertBtcToFiat() {
-        convertBtcToFiat(getGAService().getFiatRate());
+        CB.after(getGAService().getFiatRate(), new CB.Toast<Float>(getGaActivity()) {
+            @Override
+            public void onUiSuccess(final Float rate) {
+                convertBtcToFiat(rate);
+            }
+        }, getGAService().getExecutor());
     }
 
     private void convertBtcToFiat(final float exchangeRate) {
@@ -614,17 +619,21 @@ public class SendFragment extends SubaccountFragment {
             return;
         }
         converting = true;
-        final float exchangeRate = getGAService().getFiatRate();
-        final Fiat exchangeFiat = Fiat.valueOf("???", new BigDecimal(exchangeRate).movePointRight(Fiat.SMALLEST_UNIT_EXPONENT)
-                .toBigInteger().longValue());
-        final ExchangeRate rate = new ExchangeRate(exchangeFiat);
-        try {
-            final Fiat fiatValue = Fiat.parseFiat("???", UI.getText(amountFiatEdit));
-            amountEdit.setText(bitcoinFormat.noCode().format(rate.fiatToCoin(fiatValue)));
-        } catch (final ArithmeticException | IllegalArgumentException e) {
-            amountEdit.setText("");
-        }
-        converting = false;
+        CB.after(getGAService().getFiatRate(), new CB.Toast<Float>(getGaActivity()) {
+            @Override
+            public void onUiSuccess(final Float exchangeRate) {
+                final Fiat exchangeFiat = Fiat.valueOf("???", new BigDecimal(exchangeRate).movePointRight(Fiat.SMALLEST_UNIT_EXPONENT)
+                        .toBigInteger().longValue());
+                final ExchangeRate rate = new ExchangeRate(exchangeFiat);
+                try {
+                    final Fiat fiatValue = Fiat.parseFiat("???", UI.getText(amountFiatEdit));
+                    amountEdit.setText(bitcoinFormat.noCode().format(rate.fiatToCoin(fiatValue)));
+                } catch (final ArithmeticException | IllegalArgumentException e) {
+                    amountEdit.setText("");
+                }
+                converting = false;
+            }
+        }, getGAService().getExecutor());
     }
 
     @Override

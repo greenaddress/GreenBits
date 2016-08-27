@@ -14,10 +14,12 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.greenaddress.greenbits.GaService;
 
 import org.bitcoinj.core.Coin;
+import org.bitcoinj.core.Monetary;
 import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.utils.MonetaryFormat;
 
@@ -40,15 +42,18 @@ public class MainFragment extends SubaccountFragment {
 
     private void updateBalance() {
         final GaService service = getGAService();
-        CB.after(service.getCoinBalance(curSubaccount), new CB.Op<Coin>(getGaActivity()) {
-            @Override
-            public void onUiSuccess(final Coin result) {
-                updateBalanceImpl(result);
-            }
-        }, service.getExecutor());
+        final ListenableFuture mon;
+        mon = Futures.allAsList(service.getCoinBalance(curSubaccount), service.getFiatBalance(curSubaccount));
+        CB.after(mon,
+                new CB.Op<List<Monetary>>(getGaActivity()) {
+                    @Override
+                    public void onUiSuccess(final List<Monetary> result) {
+                        updateBalanceImpl(result.get(0), result.get(1));
+                    }
+                }, service.getExecutor());
     }
 
-    private void updateBalanceImpl(final Coin monetary) {
+    private void updateBalanceImpl(final Monetary monetary, final Monetary fiat) {
         final GaService service = getGAService();
 
         if (service.getLoginData() == null)
@@ -74,10 +79,7 @@ public class MainFragment extends SubaccountFragment {
         else
             btcVerifiedBalance = bitcoinFormat.format(Coin.valueOf(0)).toString();
 
-        final String fiatBalance =
-                MonetaryFormat.FIAT.minDecimals(2).noCode().format(
-                        service.getFiatBalance(curSubaccount))
-                        .toString();
+        final String fiatBalance = MonetaryFormat.FIAT.minDecimals(2).noCode().format(fiat).toString();
         final String fiatCurrency = service.getFiatCurrency();
         final String converted = CurrencyMapper.map(fiatCurrency);
 
