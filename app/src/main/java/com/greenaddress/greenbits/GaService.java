@@ -121,10 +121,6 @@ public class GaService extends Service implements INotificationHandler {
 
     private final SparseArray<Fiat> mFiatBalances = new SparseArray<>();
     private float mFiatRate;
-    private String mFiatCurrency;
-    private String mFiatExchange;
-    private ArrayList<Map<String, ?>> mSubaccounts;
-    private String mReceivingId;
     private Map<?, ?> mTwoFactorConfig;
     private final GaObservable mTwoFactorConfigObservable = new GaObservable();
     private String mDeviceId;
@@ -151,13 +147,12 @@ public class GaService extends Service implements INotificationHandler {
     }
 
     public File getSPVChainFile() {
-        final String dirName = "blockstore_" + mReceivingId;
+        final String dirName = "blockstore_" + getLoginData().receivingId;
         return new File(getDir(dirName, Context.MODE_PRIVATE), "blockchain.spvchain");
     }
 
     private void setFiatCurrency(final String currency) {
         getLoginData().currency = currency;
-        mFiatCurrency = currency;
     }
 
     private void getAvailableTwoFactorMethods() {
@@ -239,7 +234,7 @@ public class GaService extends Service implements INotificationHandler {
     public SharedPreferences cfg() { return PreferenceManager.getDefaultSharedPreferences(this); }
     public SharedPreferences cfg(final String name) { return getSharedPreferences(name, MODE_PRIVATE); }
     public SharedPreferences.Editor cfgEdit(final String name) { return cfg(name).edit(); }
-    public SharedPreferences cfgIn(final String name) { return cfg(name + mReceivingId); }
+    public SharedPreferences cfgIn(final String name) { return cfg(name + getLoginData().receivingId); }
     public SharedPreferences.Editor cfgInEdit(final String name) { return cfgIn(name).edit(); }
 
     // User config is stored on the server (unlike preferences which are local)
@@ -437,12 +432,6 @@ public class GaService extends Service implements INotificationHandler {
         // android.os.SystemClock.sleep(10000);
         Log.d(TAG, "Success LOGIN callback");
 
-        // FIXME: Why are we copying these? If we need them when not logged in,
-        // we should just copy the whole loginData instance
-        mFiatCurrency = loginData.currency;
-        mFiatExchange = loginData.exchange;
-        mSubaccounts = loginData.subAccounts;
-        mReceivingId = loginData.receivingId;
         HDKey.resetCache(loginData.gaUserPath);
 
         mBalanceObservables.put(0, new GaObservable());
@@ -554,8 +543,9 @@ public class GaService extends Service implements INotificationHandler {
         return Futures.transform(mClient.setPricingSource(currency, exchange), new Function<Boolean, Boolean>() {
             @Override
             public Boolean apply(final Boolean input) {
-                mFiatCurrency = currency;
-                mFiatExchange = exchange;
+                final LoginData data = getLoginData();
+                data.currency = currency;
+                data.exchange = exchange;
                 return input;
             }
         });
@@ -813,24 +803,24 @@ public class GaService extends Service implements INotificationHandler {
     }
 
     public String getFiatCurrency() {
-        return mFiatCurrency;
+        return getLoginData().currency;
     }
 
     public String getFiatExchange() {
-        return mFiatExchange;
+        return getLoginData().exchange;
     }
 
     public ArrayList<Map<String, ?>> getSubaccounts() {
-        return mSubaccounts;
+        return getLoginData().subAccounts;
     }
 
     public boolean haveSubaccounts() {
-        return mSubaccounts != null && !mSubaccounts.isEmpty();
+        return getLoginData().subAccounts != null && !getLoginData().subAccounts.isEmpty();
     }
 
     public Map<String, ?> findSubaccount(final String type, final Integer subAccount) {
         if (haveSubaccounts())
-            for (final Map<String, ?> ret : mSubaccounts)
+            for (final Map<String, ?> ret : getLoginData().subAccounts)
                 if (ret.get("pointer").equals(subAccount) &&
                    (type == null || ret.get("type").equals(type)))
                     return ret;

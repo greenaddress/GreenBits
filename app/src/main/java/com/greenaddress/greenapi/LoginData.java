@@ -10,7 +10,7 @@ import java.util.Map;
 public class LoginData {
     private final static int EPOCH_START = 1393628400;
 
-    public final String exchange;
+    public String exchange;
     public String currency;
     public final Map<String, Object> userConfig;
     public Map<String, Object> feeEstimates;
