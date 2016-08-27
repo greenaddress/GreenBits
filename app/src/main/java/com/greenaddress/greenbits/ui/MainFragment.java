@@ -18,7 +18,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.greenaddress.greenbits.GaService;
 
 import org.bitcoinj.core.Coin;
-import org.bitcoinj.core.Monetary;
 import org.bitcoinj.core.Sha256Hash;
 import org.bitcoinj.utils.MonetaryFormat;
 
@@ -41,9 +40,16 @@ public class MainFragment extends SubaccountFragment {
 
     private void updateBalance() {
         final GaService service = getGAService();
-        final Monetary monetary = service.getCoinBalance(curSubaccount);
-        if (monetary == null)
-            return;
+        CB.after(service.getCoinBalance(curSubaccount), new CB.Op<Coin>(getGaActivity()) {
+            @Override
+            public void onUiSuccess(final Coin result) {
+                updateBalanceImpl(result);
+            }
+        }, service.getExecutor());
+    }
+
+    private void updateBalanceImpl(final Coin monetary) {
+        final GaService service = getGAService();
 
         if (service.getLoginData() == null)
             return;
@@ -158,10 +164,8 @@ public class MainFragment extends SubaccountFragment {
         curBalanceObserver = makeBalanceObserver();
         service.addBalanceObserver(curSubaccount, curBalanceObserver);
 
-        if (service.getCoinBalance(curSubaccount) != null) {
-            updateBalance();
-            reloadTransactions(false);
-        }
+        updateBalance();
+        reloadTransactions(false);
         return mView;
     }
 

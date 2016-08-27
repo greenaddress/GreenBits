@@ -113,12 +113,20 @@ public class TabbedMainActivity extends GaActivity implements Observer {
     }
 
     private void setAccountTitle(final int subAccount) {
+        CB.after(mService.getCoinBalance(subAccount), new CB.Op<Coin>(this) {
+            public void onUiSuccess(final Coin result) {
+                setAccountTitleImpl(subAccount, result);
+            }
+        }, mService.getExecutor());
+    }
+
+    private void setAccountTitleImpl(final int subAccount, final Coin monetary) {
         String titleExtra;
         if (mService.showBalanceInTitle()) {
             final String btcUnit = (String) mService.getUserConfig("unit");
             final MonetaryFormat bitcoinFormat = CurrencyMapper.mapBtcUnitToFormat(btcUnit);
 
-            final String btcBalance = bitcoinFormat.noCode().format(mService.getCoinBalance(subAccount)).toString();
+            final String btcBalance = bitcoinFormat.noCode().format(monetary).toString();
             titleExtra = String.format("%s %s", UI.setAmountText(null, btcBalance), bitcoinFormat.code());
         } else if (mService.haveSubaccounts()) {
             final Map<String, ?> m = mService.findSubaccount(null, subAccount);
@@ -157,7 +165,7 @@ public class TabbedMainActivity extends GaActivity implements Observer {
                     pointers.add((Integer) m.get("pointer"));
                 }
 
-                final AccountItemAdapter adapter = new AccountItemAdapter(names, pointers, mService);
+                final AccountItemAdapter adapter = new AccountItemAdapter(names, pointers, mService, TabbedMainActivity.this);
                 final MaterialDialog dialog = new MaterialDialog.Builder(TabbedMainActivity.this)
                         .title(R.string.footerAccount)
                         .adapter(adapter, null)

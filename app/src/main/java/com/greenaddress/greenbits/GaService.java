@@ -117,7 +117,7 @@ public class GaService extends Service implements INotificationHandler {
     // cache
     private ListenableFuture<List<List<String>>> mCurrencyExchangePairs;
 
-    private final SparseArray<Coin> mCoinBalances = new SparseArray<>();
+    private final SparseArray<Map<String, String>> mCoinBalances = new SparseArray<>();
 
     private final SparseArray<Fiat> mFiatBalances = new SparseArray<>();
     private float mFiatRate;
@@ -331,6 +331,10 @@ public class GaService extends Service implements INotificationHandler {
         mState.setForcedLogout(code == 4000);
         mState.transitionTo(ConnState.DISCONNECTED);
 
+        mCoinBalances.clear();
+        mFiatBalances.clear();
+        mTwoFactorConfig.clear();
+
         if (getNetworkInfo() == null) {
             mState.transitionTo(ConnState.OFFLINE);
             return;
@@ -434,12 +438,9 @@ public class GaService extends Service implements INotificationHandler {
         HDKey.resetCache(loginData.gaUserPath);
 
         mBalanceObservables.put(0, new GaObservable());
-        updateBalance(0);
-        for (final Map<String, ?> m : loginData.subAccounts) {
-            final int pointer = ((Integer) m.get("pointer"));
-            mBalanceObservables.put(pointer, new GaObservable());
-            updateBalance(pointer);
-        }
+        for (final Map<String, ?> m : loginData.subAccounts)
+            mBalanceObservables.put(((Integer) m.get("pointer")), new GaObservable());
+        
         if (!isWatchOnly()) {
             getAvailableTwoFactorMethods();
             mSPV.startAsync();
@@ -502,39 +503,33 @@ public class GaService extends Service implements INotificationHandler {
         mState.transitionTo(ConnState.DISCONNECTED);
     }
 
-    public void updateBalance(final int subAccount) {
-        Futures.addCallback(mClient.getSubaccountBalance(subAccount), new FutureCallback<Map<?, ?>>() {
-            @Override
-            public void onSuccess(final Map<?, ?> result) {
-                final String fiatCurrency = (String) result.get("fiat_currency");
-                mCoinBalances.put(subAccount, Coin.valueOf(Long.valueOf((String) result.get("satoshi"))));
-                mFiatRate = Float.valueOf((String) result.get("fiat_exchange"));
-                if (mClient.isWatchOnly())
-                    setFiatCurrency(fiatCurrency);
-                // Fiat.parseFiat uses toBigIntegerExact which requires at most 4 decimal digits,
-                // while the server can return more, hence toBigInteger instead here:
-                final BigInteger tmpValue = new BigDecimal((String) result.get("fiat_value"))
-                        .movePointRight(Fiat.SMALLEST_UNIT_EXPONENT).toBigInteger();
-                // also strip extra decimals (over 2 places) because that's what the old JS client does
-                final BigInteger fiatValue = tmpValue.subtract(tmpValue.mod(BigInteger.valueOf(10).pow(Fiat.SMALLEST_UNIT_EXPONENT - 2)));
-                mFiatBalances.put(subAccount, Fiat.valueOf(fiatCurrency, fiatValue.longValue()));
-                fireBalanceChanged(subAccount);
-            }
+    private void onBalanceUpdate(final int subAccount, final Map<String,String> result) {
+        final String fiatCurrency = result.get("fiat_currency");
+        mCoinBalances.put(subAccount, result);
+        mFiatRate = Float.valueOf(result.get("fiat_exchange"));
+        if (mClient.isWatchOnly())
+            setFiatCurrency(fiatCurrency);
+        // Fiat.parseFiat uses toBigIntegerExact which requires at most 4 decimal digits,
+        // while the server can return more, hence toBigInteger instead here:
+        final BigInteger tmpValue = new BigDecimal(result.get("fiat_value"))
+                .movePointRight(Fiat.SMALLEST_UNIT_EXPONENT).toBigInteger();
+        // also strip extra decimals (over 2 places) because that's what the old JS client does
+        final BigInteger fiatValue = tmpValue.subtract(tmpValue.mod(BigInteger.valueOf(10).pow(Fiat.SMALLEST_UNIT_EXPONENT - 2)));
+        mFiatBalances.put(subAccount, Fiat.valueOf(fiatCurrency, fiatValue.longValue()));
+        fireBalanceChanged(subAccount);
+    }
 
+    public ListenableFuture<Map<String, String>> updateBalance(final int subAccount) {
+        return Futures.transform(mClient.getSubaccountBalance(subAccount), new Function<Map<String,String>, Map<String, String>>() {
             @Override
-            public void onFailure(final Throwable t) { }
+            public Map<String, String> apply(final Map<String, String> result) {
+                onBalanceUpdate(subAccount, result);
+                return result;
+            }
         }, mExecutor);
     }
 
-    public ListenableFuture<Map<?, ?>> getSubaccountBalance(final int pointer) {
-        return mClient.getSubaccountBalance(pointer);
-    }
-
     public void fireBalanceChanged(final int subAccount) {
-        if (getCoinBalance(subAccount) == null) {
-            // Called from addUtxoToValues before balance is fetched
-            return;
-        }
         mBalanceObservables.get(subAccount).doNotify();
     }
 
@@ -589,12 +584,21 @@ public class GaService extends Service implements INotificationHandler {
         return login(new SWWallet(master), pinData.mMnemonic);
     }
 
-    private void preparePrivData(final Map<String, Object> privateData) {
+    private ListenableFuture<Map<String, Object>> preparePrivData(final Map<String, Object> privateData) {
         final int subAccount = privateData.containsKey("subaccount")? (int) privateData.get("subaccount"):0;
+        return Futures.transform(getCoinBalance(subAccount), new Function<Coin, Map<String, Object>>() {
+            @Override
+            public Map<String, Object> apply(final Coin balance) {
+                return preparePrivataData(subAccount, privateData, balance);
+            }
+        });
+    }
+
+    private Map<String, Object> preparePrivataData(final int subAccount, final Map<String, Object> privateData, final Coin balance) {
         // skip fetching raw if not needed
         final Coin verifiedBalance = getSPVVerifiedBalance(subAccount);
         final boolean useHttp = !isSPVEnabled() ||
-                verifiedBalance == null || !verifiedBalance.equals(getCoinBalance(subAccount)) ||
+                verifiedBalance == null || !verifiedBalance.equals(balance) ||
                 mClient.getSigningWallet().requiresPrevoutRawTxs();
 
         privateData.put("prevouts_mode", useHttp ? "http" : "skip");
@@ -602,7 +606,9 @@ public class GaService extends Service implements INotificationHandler {
         final Object rbf_optin = getUserConfig("replace_by_fee");
         if (rbf_optin != null)
             privateData.put("rbf_optin", rbf_optin);
+        return privateData;
     }
+
 
     public ListenableFuture<List<byte[]>> signTransaction(final PreparedTransaction ptx) {
         return mClient.signTransaction(mClient.getSigningWallet(), ptx);
@@ -620,7 +626,12 @@ public class GaService extends Service implements INotificationHandler {
 
     public ListenableFuture<PreparedTransaction> prepareSweepAll(final int subAccount, final String recipient, final Map<String, Object> privateData) {
         preparePrivData(privateData);
-        return mClient.prepareTx(getCoinBalance(subAccount).longValue(), recipient, "receiver", privateData);
+        return Futures.transform(getCoinBalance(subAccount), new AsyncFunction<Coin, PreparedTransaction>() {
+
+            public ListenableFuture<PreparedTransaction> apply(final Coin input) {
+                return mClient.prepareTx(input.longValue(), recipient, "receiver", privateData);
+            }
+        });
     }
 
     public ListenableFuture<String> signAndSendTransaction(final PreparedTransaction ptx, final Object twoFacData) {
@@ -789,8 +800,19 @@ public class GaService extends Service implements INotificationHandler {
         mVerifiedTxObservable.doNotify();
     }
 
-    public Coin getCoinBalance(final int subAccount) {
-        return mCoinBalances.get(subAccount);
+    public ListenableFuture<Coin> getCoinBalance(final int subAccount) {
+        return Futures.transform(getMapBalance(subAccount), new Function<Map<String,String>, Coin>() {
+            public Coin apply(final  Map<String, String> input) {
+                return Coin.valueOf(Long.valueOf(input.get("satoshi")));
+            }
+        });
+    }
+
+    public ListenableFuture<Map<String,String>> getMapBalance(final int subAccount) {
+        final Map<String, String> balance = mCoinBalances.get(subAccount);
+        if (balance != null)
+            return Futures.immediateFuture(balance);
+        return updateBalance(subAccount);
     }
 
     public Fiat getFiatBalance(final int subAccount) {

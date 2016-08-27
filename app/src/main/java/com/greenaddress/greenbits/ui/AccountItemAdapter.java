@@ -1,6 +1,7 @@
 package com.greenaddress.greenbits.ui;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.view.LayoutInflater;
@@ -22,15 +23,17 @@ class AccountItemAdapter extends RecyclerView.Adapter<AccountItemAdapter.Item> {
     private final ArrayList<Integer> mPointers;
     private OnAccountSelected mOnAccountSelected;
     private final GaService mService;
+    private final Activity mActivity;
 
     interface OnAccountSelected {
         void onAccountSelected(int account);
     }
 
-    public AccountItemAdapter(final ArrayList<String> names, final ArrayList<Integer> pointers, final GaService service) {
+    public AccountItemAdapter(final ArrayList<String> names, final ArrayList<Integer> pointers, final GaService service, final Activity activity) {
         mNames = names;
         mPointers = pointers;
         mService = service;
+        mActivity = activity;
     }
 
     public void setCallback(final OnAccountSelected cb) {
@@ -45,7 +48,16 @@ class AccountItemAdapter extends RecyclerView.Adapter<AccountItemAdapter.Item> {
     }
 
     private void onDisplayBalance(final Item holder, final int position) {
-        final Monetary monetary = mService.getCoinBalance(mPointers.get(position));
+        CB.after(mService.getCoinBalance(mPointers.get(position)), new CB.Op<Monetary>(mActivity) {
+            @Override
+            public void onUiSuccess(final Monetary monetary) {
+                onDisplayBalance(holder, monetary);
+            }
+        }, mService.getExecutor());
+    }
+
+    private void onDisplayBalance(final Item holder, final Monetary monetary) {
+
         final String btcUnit = (String) mService.getUserConfig("unit");
         final MonetaryFormat bitcoinFormat = CurrencyMapper.mapBtcUnitToFormat(btcUnit);
 

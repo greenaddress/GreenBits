@@ -395,7 +395,7 @@ public class WalletClient {
         return Futures.transform(Futures.transform(rpc, fn, mExecutor), postFn, mExecutor);
     }
 
-    public ListenableFuture<Map<?, ?>> getSubaccountBalance(final int subAccount) {
+    public ListenableFuture<Map<String, String>> getSubaccountBalance(final int subAccount) {
         return simpleCall("txs.get_balance", Map.class, subAccount);
     }
 
