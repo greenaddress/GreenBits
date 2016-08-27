@@ -169,14 +169,15 @@ public class RequestLoginActivity extends LoginActivity implements OnDiscoveredT
 
             @Override
             public void onUiFailure(final Throwable t) {
-                if (Throwables.getRootCause(t) instanceof LoginFailed)
+                if (!(Throwables.getRootCause(t) instanceof LoginFailed))
+                    finish();
+                else {
                     // login failed - most likely TREZOR/KeepKey/BWALLET/AvalonWallet not paired
                     new MaterialDialog.Builder(RequestLoginActivity.this)
                             .title(R.string.trezor_login_failed)
                             .content(R.string.trezor_login_failed_details)
                             .build().show();
-                else
-                    finish();
+                }
             }
         }, mService.getExecutor());
         return true;

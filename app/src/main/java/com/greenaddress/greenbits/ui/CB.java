@@ -12,9 +12,9 @@ import java.util.concurrent.Executor;
 
 public final class CB {
 
-    public static <T> void after(ListenableFuture<T> f,
-                                 FutureCallback<? super T> cb,
-                                 Executor executor) {
+    public static <T> void after(final ListenableFuture<T> f,
+                                 final FutureCallback<? super T> cb,
+                                 final Executor executor) {
         Futures.addCallback(f, cb, executor);
     }
 
@@ -78,6 +78,6 @@ public final class CB {
 
     /** A runnable that takes 1 argument */
     public interface Runnable1T<T> {
-        void run(final T arg);
+        void run(T arg);
     }
 }

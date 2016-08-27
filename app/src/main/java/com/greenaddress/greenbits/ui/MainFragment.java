@@ -241,15 +241,15 @@ public class MainFragment extends SubaccountFragment {
 
                 for (final Object tx : txList) {
                     try {
-                        Map<String, Object> txJSON = (Map) tx;
-                        ArrayList<String> replacedList = (ArrayList) txJSON.get("replaced_by");
+                        final Map<String, Object> txJSON = (Map) tx;
+                        final ArrayList<String> replacedList = (ArrayList) txJSON.get("replaced_by");
 
                         if (replacedList == null) {
                             mTxItems.add(new TransactionItem(service, txJSON, currentBlock));
                             continue;
                         }
 
-                        for (String replacedBy : replacedList) {
+                        for (final String replacedBy : replacedList) {
                             final Sha256Hash replacedHash = Sha256Hash.wrap(replacedBy);
                             if (!replacedTxs.containsKey(replacedHash))
                                 replacedTxs.put(replacedHash, new ArrayList<Sha256Hash>());
@@ -261,7 +261,7 @@ public class MainFragment extends SubaccountFragment {
                     }
                 }
 
-                for (TransactionItem txItem : mTxItems)
+                for (final TransactionItem txItem : mTxItems)
                     if (replacedTxs.containsKey(txItem.txHash))
                         for (Sha256Hash replaced : replacedTxs.get(txItem.txHash))
                             txItem.replacedHashes.add(replaced);
@@ -300,8 +300,7 @@ public class MainFragment extends SubaccountFragment {
     @Override
     public void setUserVisibleHint(final boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
-        if (isVisibleToUser) {
+        if (isVisibleToUser)
             hideKeyboard();
-        }
     }
 }

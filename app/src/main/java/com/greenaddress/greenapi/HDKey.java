@@ -101,7 +101,7 @@ public class HDKey {
                 k = deriveChildKey(k, subAccount);
         }
 
-        Object master = Wally.bip32_key_init(VER_PUBLIC, 0, 0,
+        final Object master = Wally.bip32_key_init(VER_PUBLIC, 0, 0,
                                              h(Network.depositChainCode), h(Network.depositPubkey),
                                              null, null, null);
         final int[] path = new int[mGaUserPath.length + (subAccount == 0 ? 1 : 2)];
@@ -110,7 +110,7 @@ public class HDKey {
         if (subAccount != 0)
             path[mGaUserPath.length + 1] = subAccount;
 
-        Object derived = Wally.bip32_key_from_parent_path(master, path, BIP32_FLAG_KEY_PUBLIC);
+        final Object derived = Wally.bip32_key_from_parent_path(master, path, BIP32_FLAG_KEY_PUBLIC);
 
         final DeterministicKey key;
         final ArrayList<ChildNumber> childNumbers = new ArrayList<>(path.length);

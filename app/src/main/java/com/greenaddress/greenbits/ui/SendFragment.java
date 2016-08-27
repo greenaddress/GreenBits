@@ -336,7 +336,7 @@ public class SendFragment extends SubaccountFragment {
                 if (instantConfirmationCheckbox.isChecked())
                     privateData.put("instant", true);
 
-                ListenableFuture<PreparedTransaction> ptxFn;
+                final ListenableFuture<PreparedTransaction> ptxFn;
                 if (payreqData == null) {
                     if (!validAddress && !validAmount) {
                         message = gaActivity.getString(R.string.invalidAmountAndAddress);

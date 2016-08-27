@@ -120,8 +120,9 @@ public class PinActivity extends LoginActivity implements Observer {
                 final SharedPreferences prefs = mService.cfg("pin");
                 final int counter = prefs.getInt("counter", 0) + 1;
 
-                if (t instanceof GAException ||
-                    Throwables.getRootCause(t) instanceof LoginFailed) {
+                if (!(t instanceof GAException) && !(Throwables.getRootCause(t) instanceof LoginFailed))
+                    message = t.getMessage();
+                else {
                     final SharedPreferences.Editor editor = prefs.edit();
                     if (counter < 3) {
                         editor.putInt("counter", counter);
@@ -132,8 +133,6 @@ public class PinActivity extends LoginActivity implements Observer {
                     }
                     editor.apply();
                 }
-                else
-                    message = t.getMessage();
 
                 PinActivity.this.toast(message);
 

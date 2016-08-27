@@ -109,9 +109,9 @@ public class GaService extends Service implements INotificationHandler {
     private final SparseArray<GaObservable> mBalanceObservables = new SparseArray<>();
     private final GaObservable mNewTxObservable = new GaObservable();
     private final GaObservable mVerifiedTxObservable = new GaObservable();
-    private String mSignUpMnemonics = null;
-    private Bitmap mSignUpQRCode = null;
-    private int mCurrentBlock = 0;
+    private String mSignUpMnemonics;
+    private Bitmap mSignUpQRCode;
+    private int mCurrentBlock;
 
     private boolean mAutoReconnect = true;
     // cache
@@ -124,8 +124,7 @@ public class GaService extends Service implements INotificationHandler {
     private Map<?, ?> mTwoFactorConfig;
     private final GaObservable mTwoFactorConfigObservable = new GaObservable();
     private String mDeviceId;
-    private boolean mUserCancelledPINEntry = false;
-
+    private boolean mUserCancelledPINEntry;
     public final SPV mSPV = new SPV(this);
 
     private WalletClient mClient;
