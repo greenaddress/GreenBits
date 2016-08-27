@@ -362,9 +362,9 @@ public class SPV {
                     public void onSuccess(final List<Boolean> result) {
                         fireBalanceChanged(changedSubaccounts);
                     }
-                });
+                }, mService.getExecutor());
             }
-        });
+        }, mService.getExecutor());
     }
 
     public int getBloomFilterElementCount() {
@@ -559,7 +559,7 @@ public class SPV {
                     t.printStackTrace();
                     mNotifyManager.cancel(mNotificationId);
                 }
-            });
+            }, mService.getExecutor());
         }
     }
 

@@ -102,20 +102,20 @@ public class PinActivity extends LoginActivity implements Observer {
         final ListenableFuture<LoginData> loginFuture;
         loginFuture = Futures.transform(mService.onConnected, connectToLogin, mService.getExecutor());
 
-        Futures.addCallback(loginFuture, new FutureCallback<LoginData>() {
+        CB.after(loginFuture, new CB.Op<LoginData>(this) {
             @Override
-            public void onSuccess(final LoginData result) {
+            public void onUiSuccess(final LoginData result) {
                 mService.cfgEdit("pin").putInt("counter", 0).apply();
                 if (getCallingActivity() == null) {
                     onLoginSuccess();
                     return;
                 }
                 setResult(RESULT_OK);
-                finishOnUiThread();
+                finish();
             }
 
             @Override
-            public void onFailure(final Throwable t) {
+            public void onUiFailure(final Throwable t) {
                 final String message;
                 final SharedPreferences prefs = mService.cfg("pin");
                 final int counter = prefs.getInt("counter", 0) + 1;
@@ -135,19 +135,15 @@ public class PinActivity extends LoginActivity implements Observer {
                 else
                     message = t.getMessage();
 
-                PinActivity.this.runOnUiThread(new Runnable() {
-                    public void run() {
-                        PinActivity.this.toast(message);
+                PinActivity.this.toast(message);
 
-                        if (counter >= 3) {
-                            startActivity(new Intent(PinActivity.this, FirstScreenActivity.class));
-                            finish();
-                            return;
-                        }
-                        if (onFailureFn != null)
-                            onFailureFn.run();
-                    }
-                });
+                if (counter >= 3) {
+                    startActivity(new Intent(PinActivity.this, FirstScreenActivity.class));
+                    finish();
+                    return;
+                }
+                if (onFailureFn != null)
+                    onFailureFn.run();
             }
         }, mService.getExecutor());
     }

@@ -33,7 +33,6 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.blockstream.libwally.Wally;
 import com.dd.CircularProgressButton;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
@@ -155,30 +154,25 @@ public class MnemonicActivity extends LoginActivity {
 
         final ListenableFuture<LoginData> loginFuture;
         loginFuture = Futures.transform(mService.onConnected, connectToLogin, mService.getExecutor());
-
-        Futures.addCallback(loginFuture, new FutureCallback<LoginData>() {
+        CB.after(loginFuture, new CB.Op<LoginData>(this) {
             @Override
-            public void onSuccess(final LoginData result) {
+            public void onUiSuccess(final LoginData result) {
                 if (getCallingActivity() == null) {
                     final Intent savePin = PinSaveActivity.createIntent(MnemonicActivity.this, mService.getMnemonics());
                     startActivityForResult(savePin, PINSAVE);
                 } else {
                     setResult(RESULT_OK);
-                    finishOnUiThread();
+                    finish();
                 }
             }
 
             @Override
-            public void onFailure(final Throwable t) {
+            public void onUiFailure(final Throwable t) {
                 final boolean accountDoesntExist = t instanceof ClassCastException;
                 final String message = accountDoesntExist ? "Account doesn't exist" : "Login failed";
                 t.printStackTrace();
-                MnemonicActivity.this.runOnUiThread(new Runnable() {
-                    public void run() {
-                        MnemonicActivity.this.toast(message);
-                        enableLogin();
-                    }
-                });
+                MnemonicActivity.this.toast(message);
+                enableLogin();
             }
         }, mService.getExecutor());
     }
@@ -320,16 +314,12 @@ public class MnemonicActivity extends LoginActivity {
         if (mService.onConnected == null || mnemonics.equals(mService.getMnemonics()))
             return;
 
-        CB.after(mService.onConnected, new CB.Op<Void>() {
+        CB.after(mService.onConnected, new CB.Op<Void>(this) {
             @Override
-            public void onSuccess(final Void result) {
-                runOnUiThread(new Runnable() {
-                    public void run() {
-                        login();
-                    }
-                });
+            public void onUiSuccess(final Void result) {
+                login();
             }
-        });
+        }, mService.getExecutor());
     }
 
     private byte[] getNFCPayload(final Intent intent) {
@@ -360,7 +350,7 @@ public class MnemonicActivity extends LoginActivity {
                     mMnemonicText.setText(mnemonics);
                     loginOnUiThread(mnemonics);
                 }
-            });
+            }, mService.getExecutor());
     }
 
     private Spans spans;

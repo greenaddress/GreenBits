@@ -29,7 +29,6 @@ import android.widget.TextView;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.blockstream.libwally.Wally;
-import com.google.common.util.concurrent.FutureCallback;
 import com.greenaddress.greenapi.Network;
 import com.greenaddress.greenbits.GaService;
 import com.greenaddress.greenbits.ui.monitor.NetworkMonitorActivity;
@@ -308,7 +307,7 @@ public class TabbedMainActivity extends GaActivity implements Observer {
                     }
                 }
                 final ECKey keyNonBip38 = keyNonFinal;
-                final FutureCallback<Map<?, ?>> callback = new CB.Toast<Map<?, ?>>(caller) {
+                final CB.Op <Map<?, ?>> callback = new CB.Toast<Map<?, ?>>(caller) {
                     @Override
                     public void onSuccess(final Map<?, ?> sweepResult) {
                         final View v = getLayoutInflater().inflate(R.layout.dialog_sweep_address, null, false);
@@ -366,9 +365,9 @@ public class TabbedMainActivity extends GaActivity implements Observer {
                                                 signatures.add(sig.encodeToBitcoin());
                                             }
                                             CB.after(mService.sendTransaction(signatures),
-                                                     new CB.Toast<String>(caller) { });
+                                                     new CB.Toast<String>(caller) { }, mService.getExecutor());
                                         }
-                                    });
+                                    }, mService.getExecutor());
                                 }
 
                                 @Override
@@ -392,7 +391,7 @@ public class TabbedMainActivity extends GaActivity implements Observer {
                                                 tx = getSweepTx(sweepResult);
                                                 doSweep();
                                             }
-                                        });
+                                        }, mService.getExecutor());
                                     } catch (final IllegalArgumentException e) {
                                         caller.toast(R.string.invalid_passphrase);
                                     }
@@ -401,7 +400,7 @@ public class TabbedMainActivity extends GaActivity implements Observer {
                     }
                 };
                 if (keyNonBip38 != null)
-                    CB.after(mService.prepareSweepSocial(keyNonBip38.getPubKey(), false), callback);
+                    CB.after(mService.prepareSweepSocial(keyNonBip38.getPubKey(), false), callback, mService.getExecutor());
                 else
                     callback.onSuccess(null);
                 break;

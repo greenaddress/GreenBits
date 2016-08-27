@@ -15,8 +15,6 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 
 import com.dd.CircularProgressButton;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.greenaddress.greenbits.KeyStoreAES;
 
 public class PinSaveActivity extends GaActivity {
@@ -50,8 +48,8 @@ public class PinSaveActivity extends GaActivity {
         mSaveButton.setProgress(50);
         mPinText.setEnabled(false);
         UI.hide(mSkipButton);
-        Futures.addCallback(mService.setPin(mnemonic, pin),
-                new FutureCallback<Void>() {
+        CB.after(mService.setPin(mnemonic, pin),
+                new CB.Op<Void>(this) {
                     @Override
                     public void onSuccess(final Void result) {
                         setResult(RESULT_OK);
@@ -68,14 +66,10 @@ public class PinSaveActivity extends GaActivity {
                     }
 
                     @Override
-                    public void onFailure(final Throwable t) {
-                        PinSaveActivity.this.runOnUiThread(new Runnable() {
-                            public void run() {
-                                mSaveButton.setProgress(0);
-                                mPinText.setEnabled(true);
-                                UI.show(mSkipButton);
-                            }
-                        });
+                    public void onUiFailure(final Throwable t) {
+                        mSaveButton.setProgress(0);
+                        mPinText.setEnabled(true);
+                        UI.show(mSkipButton);
                     }
                 }, mService.getExecutor());
     }

@@ -176,7 +176,7 @@ public class SendFragment extends SubaccountFragment {
             recipientEdit.setEnabled(false);
             sendButton.setEnabled(false);
             UI.hide(noteIcon);
-            Futures.addCallback(service.processBip70URL(URI.getPaymentRequestUrl()),
+            CB.after(service.processBip70URL(URI.getPaymentRequestUrl()),
                     new CB.Toast<Map<?, ?>>(gaActivity) {
                         @Override
                         public void onSuccess(final Map<?, ?> result) {
@@ -214,11 +214,11 @@ public class SendFragment extends SubaccountFragment {
                                 }
                             });
                         }
-                    });
+                    }, service.getExecutor());
         } else {
             recipientEdit.setText(URI.getAddress().toString());
             if (URI.getAmount() != null) {
-                Futures.addCallback(service.getSubaccountBalance(curSubaccount), new CB.Op<Map<?, ?>>() {
+                CB.after(service.getSubaccountBalance(curSubaccount), new CB.Op<Map<?, ?>>() {
                     @Override
                     public void onSuccess(final Map<?, ?> result) {
                         gaActivity.runOnUiThread(new Runnable() {
@@ -407,9 +407,9 @@ public class SendFragment extends SubaccountFragment {
                                                         }
                                                     });
                                                 }
-                                            });
+                                            }, service.getExecutor());
                                 }
-                            });
+                            }, service.getExecutor());
                 }
 
                 if (message != null)
@@ -673,6 +673,6 @@ public class SendFragment extends SubaccountFragment {
                     }
                 });
             }
-        });
+        }, service.getExecutor());
     }
 }
