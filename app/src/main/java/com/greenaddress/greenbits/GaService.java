@@ -110,8 +110,8 @@ public class GaService extends Service implements INotificationHandler {
     private final SparseArray<GaObservable> mBalanceObservables = new SparseArray<>();
     private final GaObservable mNewTxObservable = new GaObservable();
     private final GaObservable mVerifiedTxObservable = new GaObservable();
-    private String mSignUpMnemonics = null;
-    private Bitmap mSignUpQRCode = null;
+    private byte[] mSignUpMnemonics;
+    private final SparseArray<Bitmap> mSignUpQRCode = new SparseArray<>(7);
     private int mCurrentBlock = 0;
 
     private boolean mAutoReconnect = true;
@@ -746,21 +746,24 @@ public class GaService extends Service implements INotificationHandler {
 
     public void resetSignUp() {
         mSignUpMnemonics = null;
-        if (mSignUpQRCode != null)
-            mSignUpQRCode.recycle();
-        mSignUpQRCode = null;
+        final int size = mSignUpQRCode.size();
+        for(int i = 0; i < size; ++i) {
+            final int key = mSignUpQRCode.keyAt(i);
+            mSignUpQRCode.get(key).recycle();
+        }
+        mSignUpQRCode.clear();
     }
 
-    public String getSignUpMnemonic() {
+    public String getSignUpMnemonic(final int lang) {
         if (mSignUpMnemonics == null)
-            mSignUpMnemonics = CryptoHelper.mnemonic_from_bytes(CryptoHelper.randomBytes(32));
-        return mSignUpMnemonics;
+            mSignUpMnemonics = CryptoHelper.randomBytes(32);
+        return CryptoHelper.mnemonic_from_bytes(lang, mSignUpMnemonics);
     }
 
-    public Bitmap getSignUpQRCode() {
-        if (mSignUpQRCode == null)
-            mSignUpQRCode = new QrBitmap(getSignUpMnemonic(), Color.WHITE).getQRCode();
-       return mSignUpQRCode;
+    public Bitmap getSignUpQRCode(final int lang) {
+        if (mSignUpQRCode.get(lang) == null)
+            mSignUpQRCode.put(lang, new QrBitmap(getSignUpMnemonic(lang), Color.WHITE).getQRCode());
+       return mSignUpQRCode.get(lang);
     }
 
     public void addBalanceObserver(final int subAccount, final Observer o) {

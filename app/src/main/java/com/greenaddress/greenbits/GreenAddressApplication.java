@@ -62,7 +62,7 @@ public class GreenAddressApplication extends MultiDexApplication {
         // wallet during SPV syncing to prevent an exception.
         try {
             final ArrayList<String> words = new ArrayList<>(Wally.BIP39_WORDLIST_LEN);
-            MnemonicActivity.initWordList(words, null);
+            MnemonicActivity.initWordList(words, null, 0);
             MnemonicCode.INSTANCE = new MnemonicCode(words, null);
         } catch (final Exception e) {
             e.printStackTrace();
