@@ -7,9 +7,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
-import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.greenaddress.greenbits.GaService;
 import com.greenaddress.greenbits.GreenAddressApplication;
+
+import java.util.concurrent.Executors;
 
 /**
  * Base class for activities within the application.
@@ -20,6 +23,8 @@ import com.greenaddress.greenbits.GreenAddressApplication;
 public abstract class GaActivity extends AppCompatActivity {
 
     private static final String TAG = GaActivity.class.getSimpleName();
+    private static final ListeningExecutorService mExecutor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
+
 
     // Both of these variables are only assigned in the UI thread.
     // mService is available to all derived classes as soon as
@@ -42,26 +47,22 @@ public abstract class GaActivity extends AppCompatActivity {
 
         // Call onCreateWithService() on the GUI thread once our service
         // becomes available. In most cases this will execute immediately.
-        Futures.addCallback(getGAApp().onServiceAttached, new CB.Op<Void>() {
+        CB.after(getGAApp().onServiceAttached, new CB.Op<Void>(this) {
             @Override
-            public void onSuccess(final Void result) {
-                GaActivity.this.runOnUiThread(new Runnable() {
-                    public void run() {
-                        final GaActivity self = GaActivity.this;
-                        Log.d(TAG, "onCreateWithService -> " + self.getClass().getSimpleName());
-                        self.mService = getGAApp().mService;
-                        self.onCreateWithService(savedInstanceState);
-                        if (self.mResumed) {
-                            // We resumed before the service became available, and so
-                            // did not call onResumeWithService() then - call it now.
-                            Log.d(TAG, "(delayed)onResumeWithService -> " + self.getClass().getSimpleName());
-                            self.mService.incRef();
-                            onResumeWithService();
-                        }
-                    }
-                });
+            public void onUiSuccess(final Void result) {
+                final GaActivity self = GaActivity.this;
+                Log.d(TAG, "onCreateWithService -> " + self.getClass().getSimpleName());
+                self.mService = getGAApp().mService;
+                self.onCreateWithService(savedInstanceState);
+                if (self.mResumed) {
+                    // We resumed before the service became available, and so
+                    // did not call onResumeWithService() then - call it now.
+                    Log.d(TAG, "(delayed)onResumeWithService -> " + self.getClass().getSimpleName());
+                    self.mService.incRef();
+                    onResumeWithService();
+                }
             }
-        });
+        }, mExecutor);
     }
 
     @Override

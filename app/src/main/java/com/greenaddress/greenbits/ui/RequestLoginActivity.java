@@ -156,33 +156,30 @@ public class RequestLoginActivity extends LoginActivity implements OnDiscoveredT
             return true;
         }
 
-        Futures.addCallback(Futures.transform(mService.onConnected, new AsyncFunction<Void, LoginData>() {
+        CB.after(Futures.transform(mService.onConnected, new AsyncFunction<Void, LoginData>() {
             @Override
             public ListenableFuture<LoginData> apply(final Void input) throws Exception {
                 return mService.login(new TrezorHWWallet(t));
             }
-        }), new FutureCallback<LoginData>() {
+        }), new CB.Op<LoginData>(this) {
             @Override
             public void onSuccess(final LoginData result) {
                 RequestLoginActivity.this.onLoginSuccess();
             }
 
             @Override
-            public void onFailure(final Throwable t) {
-                if (Throwables.getRootCause(t) instanceof LoginFailed)
+            public void onUiFailure(final Throwable t) {
+                if (!(Throwables.getRootCause(t) instanceof LoginFailed))
+                    finish();
+                else {
                     // login failed - most likely TREZOR/KeepKey/BWALLET/AvalonWallet not paired
-                    runOnUiThread(new Runnable() {
-                        public void run() {
-                            new MaterialDialog.Builder(RequestLoginActivity.this)
-                                    .title(R.string.trezor_login_failed)
-                                    .content(R.string.trezor_login_failed_details)
-                                    .build().show();
-                        }
-                    });
-                else
-                    finishOnUiThread();
+                    new MaterialDialog.Builder(RequestLoginActivity.this)
+                            .title(R.string.trezor_login_failed)
+                            .content(R.string.trezor_login_failed_details)
+                            .build().show();
+                }
             }
-        });
+        }, mService.getExecutor());
         return true;
     }
 
@@ -307,7 +304,7 @@ public class RequestLoginActivity extends LoginActivity implements OnDiscoveredT
                 UI.showDialog(mBTChipDialog);
             }
         });
-        Futures.addCallback(Futures.transform(mService.onConnected, new AsyncFunction<Void, LoginData>() {
+        CB.after(Futures.transform(mService.onConnected, new AsyncFunction<Void, LoginData>() {
             @Override
             public ListenableFuture<LoginData> apply(final Void input) throws Exception {
                 return Futures.transform(pinFuture, new AsyncFunction<String, LoginData>() {
@@ -365,11 +362,11 @@ public class RequestLoginActivity extends LoginActivity implements OnDiscoveredT
                     }
                 });
             }
-        }), mOnLoggedIn);
+        }), mOnLoggedIn, mService.getExecutor());
     }
 
 
-    final FutureCallback<LoginData> mOnLoggedIn = new FutureCallback<LoginData>() {
+    final CB.Op<LoginData> mOnLoggedIn = new CB.Op<LoginData>() {
         @Override
         public void onSuccess(final LoginData result) {
             if (result != null)

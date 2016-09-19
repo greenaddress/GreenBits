@@ -32,7 +32,6 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.afollestad.materialdialogs.Theme;
 import com.dd.CircularProgressButton;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.greenaddress.greenapi.CryptoHelper;
@@ -136,16 +135,11 @@ public class SignUpActivity extends LoginActivity {
 
                     signupContinueButton.setIndeterminateProgressMode(true);
                     signupContinueButton.setProgress(50);
-                    Futures.addCallback(onSignUp, new FutureCallback<LoginData>() {
+                    CB.after(onSignUp, new CB.Op<LoginData>(SignUpActivity.this) {
 
                         @Override
-                        public void onSuccess(final LoginData result) {
-                            SignUpActivity.this.runOnUiThread(new Runnable() {
-                                public void run() {
-                                    signupContinueButton.setProgress(100);
-                                }
-                            });
-
+                        public void onUiSuccess(final LoginData result) {
+                            signupContinueButton.setProgress(100);
                             mService.resetSignUp();
                             onSignUp = null;
                             final Intent savePin = PinSaveActivity.createIntent(SignUpActivity.this, mService.getMnemonics());
@@ -153,13 +147,9 @@ public class SignUpActivity extends LoginActivity {
                         }
 
                         @Override
-                        public void onFailure(final Throwable t) {
+                        public void onUiFailure(final Throwable t) {
                             t.printStackTrace();
-                            SignUpActivity.this.runOnUiThread(new Runnable() {
-                                public void run() {
-                                    signupContinueButton.setProgress(0);
-                                }
-                            });
+                            signupContinueButton.setProgress(0);
                         }
                     }, mService.getExecutor());
                 } else

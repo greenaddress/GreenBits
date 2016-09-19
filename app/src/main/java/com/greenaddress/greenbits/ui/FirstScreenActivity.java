@@ -215,7 +215,7 @@ public class FirstScreenActivity extends LoginActivity {
                 final BTChipPublicKey masterPublicKeyFixed = masterPublicKey;
                 final BTChipPublicKey loginPublicKeyFixed = loginPublicKey;
 
-                Futures.addCallback(Futures.transform(mService.onConnected, new AsyncFunction<Void, LoginData>() {
+                CB.after(Futures.transform(mService.onConnected, new AsyncFunction<Void, LoginData>() {
                     @Override
                     public ListenableFuture<LoginData> apply(final Void input) throws Exception {
                         if (!setup) {
@@ -239,7 +239,7 @@ public class FirstScreenActivity extends LoginActivity {
                         if (!(Throwables.getRootCause(t) instanceof LoginFailed))
                             finishOnUiThread();
                     }
-                });
+                }, mService.getExecutor());
 
                 tuiCall = false;
                 return null;

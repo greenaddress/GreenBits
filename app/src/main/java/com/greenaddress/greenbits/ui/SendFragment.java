@@ -26,6 +26,7 @@ import android.widget.TextView;
 
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
+import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.greenaddress.greenapi.PreparedTransaction;
@@ -41,6 +42,7 @@ import org.bitcoinj.utils.MonetaryFormat;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Observer;
 
@@ -176,7 +178,7 @@ public class SendFragment extends SubaccountFragment {
             recipientEdit.setEnabled(false);
             sendButton.setEnabled(false);
             UI.hide(noteIcon);
-            Futures.addCallback(service.processBip70URL(URI.getPaymentRequestUrl()),
+            CB.after(service.processBip70URL(URI.getPaymentRequestUrl()),
                     new CB.Toast<Map<?, ?>>(gaActivity) {
                         @Override
                         public void onSuccess(final Map<?, ?> result) {
@@ -214,22 +216,17 @@ public class SendFragment extends SubaccountFragment {
                                 }
                             });
                         }
-                    });
+                    }, service.getExecutor());
         } else {
             recipientEdit.setText(URI.getAddress().toString());
             if (URI.getAmount() != null) {
-                Futures.addCallback(service.getSubaccountBalance(curSubaccount), new CB.Op<Map<?, ?>>() {
+                CB.after(service.getFiatRate(), new CB.Toast<Float>(gaActivity) {
                     @Override
-                    public void onSuccess(final Map<?, ?> result) {
-                        gaActivity.runOnUiThread(new Runnable() {
-                                public void run() {
-                                    final Float fiatRate = Float.valueOf((String) result.get("fiat_exchange"));
-                                    amountEdit.setText(bitcoinFormat.noCode().format(URI.getAmount()));
-                                    convertBtcToFiat(fiatRate);
-                                    amountEdit.setEnabled(false);
-                                    amountFiatEdit.setEnabled(false);
-                                }
-                        });
+                    public void onUiSuccess(final Float rate) {
+                        amountEdit.setText(bitcoinFormat.noCode().format(URI.getAmount()));
+                        convertBtcToFiat(rate);
+                        amountEdit.setEnabled(false);
+                        amountFiatEdit.setEnabled(false);
                     }
                 }, service.getExecutor());
             }
@@ -336,7 +333,7 @@ public class SendFragment extends SubaccountFragment {
                 if (instantConfirmationCheckbox.isChecked())
                     privateData.put("instant", true);
 
-                ListenableFuture<PreparedTransaction> ptxFn;
+                final ListenableFuture<PreparedTransaction> ptxFn;
                 if (payreqData == null) {
                     if (!validAddress && !validAmount) {
                         message = gaActivity.getString(R.string.invalidAmountAndAddress);
@@ -369,47 +366,47 @@ public class SendFragment extends SubaccountFragment {
 
                 if (ptxFn != null) {
                     sendButton.setEnabled(false);
-                    CB.after(ptxFn,
-                            new CB.Toast<PreparedTransaction>(gaActivity, sendButton) {
-                                @Override
-                                public void onSuccess(final PreparedTransaction ptx) {
-                                    // final Coin fee = Coin.parseCoin("0.0001");        //FIXME: pass real fee
-                                    final Coin verifyAmount = maxButton.isChecked() ? null : amount;
-                                    CB.after(service.validateTx(ptx, recipient, verifyAmount),
-                                            new CB.Toast<Coin>(gaActivity, sendButton) {
-                                                @Override
-                                                public void onSuccess(final Coin fee) {
-                                                    final Map<?, ?> twoFacConfig = service.getTwoFactorConfig();
-                                                    // can be non-UI because validation talks to USB if hw wallet is used
-                                                    gaActivity.runOnUiThread(new Runnable() {
-                                                        public void run() {
-                                                            sendButton.setEnabled(true);
-                                                            final Coin dialogAmount, dialogFee;
-                                                            if (maxButton.isChecked()) {
-                                                                // 'fee' in reality is the sent amount in case passed amount=null
-                                                                dialogAmount = fee;
-                                                                dialogFee = service.getCoinBalance(curSubaccount).subtract(fee);
-                                                            } else {
-                                                                dialogAmount = amount;
-                                                                dialogFee = fee;
-                                                            }
-                                                            final boolean skipChoice = !ptx.mRequiresTwoFactor ||
-                                                                                        twoFacConfig == null || !((Boolean) twoFacConfig.get("any"));
-                                                            mTwoFactor = UI.popupTwoFactorChoice(gaActivity, service, skipChoice,
-                                                                                                         new CB.Runnable1T<String>() {
-                                                                @Override
-                                                                public void run(final String method) {
-                                                                    showTransactionSummary(method, dialogFee, dialogAmount, recipient, ptx);
-                                                                }
-                                                            });
-                                                            if (mTwoFactor != null)
-                                                                mTwoFactor.show();
-                                                        }
-                                                    });
-                                                }
-                                            });
-                                }
-                            });
+                    final ListenableFuture<Coin> validatedTx;
+                    validatedTx = Futures.transform(ptxFn, new AsyncFunction<PreparedTransaction, Coin>() {
+                        public ListenableFuture<Coin> apply(final  PreparedTransaction ptx) {
+                            final Coin verifyAmount = maxButton.isChecked() ? null : amount;
+                            return service.validateTx(ptx, recipient, verifyAmount);
+                        }
+                    });
+
+                    final ListenableFuture<Coin> balance = service.getCoinBalance(curSubaccount);
+                    final Map<?, ?> twoFacConfig = service.getTwoFactorConfig();
+                    CB.after(Futures.allAsList(ptxFn, validatedTx, balance), new CB.Toast<List<Object>>(getGaActivity()) {
+                        @Override
+                        public void onUiSuccess(final List<Object> res) {
+                            final PreparedTransaction ptx = (PreparedTransaction) res.get(0);
+                            final Coin fee = (Coin) res.get(1);
+                            final Coin balance = (Coin) res.get(2);
+                            sendButton.setEnabled(true);
+                            final Coin dialogAmount, dialogFee;
+                            if (maxButton.isChecked()) {
+                                // 'fee' in reality is the sent amount in case passed amount=null
+                                dialogAmount = fee;
+
+                                dialogFee = balance.subtract(fee);
+                            } else {
+                                dialogAmount = amount;
+                                dialogFee = fee;
+                            }
+                            final boolean skipChoice = !ptx.mRequiresTwoFactor ||
+                                    twoFacConfig == null || !((Boolean) twoFacConfig.get("any"));
+                            if (mTwoFactor != null)
+                                mTwoFactor.dismiss();
+                            mTwoFactor = UI.popupTwoFactorChoice(gaActivity, service, skipChoice,
+                                    new CB.Runnable1T<String>() {
+                                        @Override
+                                        public void run(final String method) {
+                                            showTransactionSummary(method, dialogFee, dialogAmount, recipient, ptx);
+                                        }
+                                    });
+                            mTwoFactor.show();
+                        }
+                    }, service.getExecutor());
                 }
 
                 if (message != null)
@@ -536,6 +533,15 @@ public class SendFragment extends SubaccountFragment {
     }
 
     private void updateBalance() {
+        CB.after(getGAService().getCoinBalance(curSubaccount), new CB.Op<Coin>(getGaActivity()) {
+           @Override
+            public void onUiSuccess(final Coin balance) {
+               updateBalanceImpl(balance);
+            }
+        }, getGAService().getExecutor());
+    }
+
+    private void updateBalanceImpl(final Coin balance) {
         final String btcUnit = (String) getGAService().getUserConfig("unit");
         final TextView sendSubAccountBalance = UI.find(mView, R.id.sendSubAccountBalance);
         final TextView sendSubAccountBalanceUnit = UI.find(mView, R.id.sendSubAccountBalanceUnit);
@@ -548,8 +554,7 @@ public class SendFragment extends SubaccountFragment {
             sendSubAccountBalanceUnit.setText(Html.fromHtml("&#xf15a; "));
         }
         final MonetaryFormat format = CurrencyMapper.mapBtcUnitToFormat(btcUnit);
-        final String btcBalance = format.noCode().format(
-                getGAService().getCoinBalance(curSubaccount)).toString();
+        final String btcBalance = format.noCode().format(balance).toString();
         UI.setAmountText(sendSubAccountBalance, btcBalance);
 
         final int nChars = sendSubAccountBalance.getText().length() + sendSubAccountBitcoinScale.getText().length() + sendSubAccountBalanceUnit.getText().length();
@@ -576,7 +581,12 @@ public class SendFragment extends SubaccountFragment {
     }
 
     private void convertBtcToFiat() {
-        convertBtcToFiat(getGAService().getFiatRate());
+        CB.after(getGAService().getFiatRate(), new CB.Toast<Float>(getGaActivity()) {
+            @Override
+            public void onUiSuccess(final Float rate) {
+                convertBtcToFiat(rate);
+            }
+        }, getGAService().getExecutor());
     }
 
     private void convertBtcToFiat(final float exchangeRate) {
@@ -609,17 +619,21 @@ public class SendFragment extends SubaccountFragment {
             return;
         }
         converting = true;
-        final float exchangeRate = getGAService().getFiatRate();
-        final Fiat exchangeFiat = Fiat.valueOf("???", new BigDecimal(exchangeRate).movePointRight(Fiat.SMALLEST_UNIT_EXPONENT)
-                .toBigInteger().longValue());
-        final ExchangeRate rate = new ExchangeRate(exchangeFiat);
-        try {
-            final Fiat fiatValue = Fiat.parseFiat("???", UI.getText(amountFiatEdit));
-            amountEdit.setText(bitcoinFormat.noCode().format(rate.fiatToCoin(fiatValue)));
-        } catch (final ArithmeticException | IllegalArgumentException e) {
-            amountEdit.setText("");
-        }
-        converting = false;
+        CB.after(getGAService().getFiatRate(), new CB.Toast<Float>(getGaActivity()) {
+            @Override
+            public void onUiSuccess(final Float exchangeRate) {
+                final Fiat exchangeFiat = Fiat.valueOf("???", new BigDecimal(exchangeRate).movePointRight(Fiat.SMALLEST_UNIT_EXPONENT)
+                        .toBigInteger().longValue());
+                final ExchangeRate rate = new ExchangeRate(exchangeFiat);
+                try {
+                    final Fiat fiatValue = Fiat.parseFiat("???", UI.getText(amountFiatEdit));
+                    amountEdit.setText(bitcoinFormat.noCode().format(rate.fiatToCoin(fiatValue)));
+                } catch (final ArithmeticException | IllegalArgumentException e) {
+                    amountEdit.setText("");
+                }
+                converting = false;
+            }
+        }, getGAService().getExecutor());
     }
 
     @Override
@@ -655,24 +669,17 @@ public class SendFragment extends SubaccountFragment {
         service.deleteBalanceObserver(curSubaccount, curBalanceObserver);
         curSubaccount = newSubAccount;
         hideInstantIf2of3();
-        final GaActivity gaActivity = getGaActivity();
-
         curBalanceObserver = makeBalanceObserver();
         service.addBalanceObserver(curSubaccount, curBalanceObserver);
-        CB.after(service.getSubaccountBalance(curSubaccount), new CB.Op<Map<?, ?>>() {
+        CB.after(service.getCoinBalance(curSubaccount), new CB.Op<Coin>(getGaActivity()) {
             @Override
-            public void onSuccess(final Map<?, ?> balance) {
-                final Coin coin = Coin.valueOf(Long.valueOf((String) balance.get("satoshi")));
+            public void onUiSuccess(final Coin coin) {
                 final String btcUnit = (String) service.getUserConfig("unit");
                 final TextView sendSubAccountBalance = UI.find(mView, R.id.sendSubAccountBalance);
                 final MonetaryFormat format = CurrencyMapper.mapBtcUnitToFormat(btcUnit);
                 final String btcBalance = format.noCode().format(coin).toString();
-                gaActivity.runOnUiThread(new Runnable() {
-                    public void run() {
-                        UI.setAmountText(sendSubAccountBalance, btcBalance);
-                    }
-                });
+                UI.setAmountText(sendSubAccountBalance, btcBalance);
             }
-        });
+        }, service.getExecutor());
     }
 }

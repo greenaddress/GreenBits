@@ -11,8 +11,6 @@ import android.widget.TextView;
 import com.afollestad.materialdialogs.DialogAction;
 import com.afollestad.materialdialogs.MaterialDialog;
 import com.dd.CircularProgressButton;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.greenaddress.greenapi.LoginData;
 
@@ -102,7 +100,7 @@ public class WatchOnlyLoginActivity extends LoginActivity {
 
         final ListenableFuture<LoginData> future = mService.watchOnlyLogin(username, password);
 
-        Futures.addCallback(future, new FutureCallback<LoginData>() {
+        CB.after(future, new CB.Op<LoginData>(this) {
 
             @Override
             public void onSuccess(final LoginData result) {
@@ -110,14 +108,10 @@ public class WatchOnlyLoginActivity extends LoginActivity {
             }
 
             @Override
-            public void onFailure(final Throwable t) {
-                runOnUiThread(new Runnable() {
-                    public void run() {
-                        onLoginFailed(getString(R.string.error_username_not_found_or_wrong_password));
-                    }
-                });
+            public void onUiFailure(final Throwable t) {
+                onLoginFailed(getString(R.string.error_username_not_found_or_wrong_password));
             }
-        });
+        }, mService.getExecutor());
     }
 
     private void onLoginBegin() {

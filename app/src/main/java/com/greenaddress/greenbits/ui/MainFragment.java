@@ -14,8 +14,8 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.afollestad.materialdialogs.MaterialDialog;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.greenaddress.greenbits.GaService;
 
 import org.bitcoinj.core.Coin;
@@ -42,9 +42,19 @@ public class MainFragment extends SubaccountFragment {
 
     private void updateBalance() {
         final GaService service = getGAService();
-        final Monetary monetary = service.getCoinBalance(curSubaccount);
-        if (monetary == null)
-            return;
+        final ListenableFuture mon;
+        mon = Futures.allAsList(service.getCoinBalance(curSubaccount), service.getFiatBalance(curSubaccount));
+        CB.after(mon,
+                new CB.Op<List<Monetary>>(getGaActivity()) {
+                    @Override
+                    public void onUiSuccess(final List<Monetary> result) {
+                        updateBalanceImpl(result.get(0), result.get(1));
+                    }
+                }, service.getExecutor());
+    }
+
+    private void updateBalanceImpl(final Monetary monetary, final Monetary fiat) {
+        final GaService service = getGAService();
 
         if (service.getLoginData() == null)
             return;
@@ -69,10 +79,7 @@ public class MainFragment extends SubaccountFragment {
         else
             btcVerifiedBalance = bitcoinFormat.format(Coin.valueOf(0)).toString();
 
-        final String fiatBalance =
-                MonetaryFormat.FIAT.minDecimals(2).noCode().format(
-                        service.getFiatBalance(curSubaccount))
-                        .toString();
+        final String fiatBalance = MonetaryFormat.FIAT.minDecimals(2).noCode().format(fiat).toString();
         final String fiatCurrency = service.getFiatCurrency();
         final String converted = CurrencyMapper.map(fiatCurrency);
 
@@ -159,10 +166,8 @@ public class MainFragment extends SubaccountFragment {
         curBalanceObserver = makeBalanceObserver();
         service.addBalanceObserver(curSubaccount, curBalanceObserver);
 
-        if (service.getCoinBalance(curSubaccount) != null) {
-            updateBalance();
-            reloadTransactions(false);
-        }
+        updateBalance();
+        reloadTransactions(false);
         return mView;
     }
 
@@ -226,72 +231,64 @@ public class MainFragment extends SubaccountFragment {
         if (replacedTxs == null || newAdapter)
             replacedTxs = new HashMap<>();
 
-        Futures.addCallback(service.getMyTransactions(curSubaccount),
-            new FutureCallback<Map<?, ?>>() {
+        final ListenableFuture<Map<?, ?>> tx = service.getMyTransactions(curSubaccount);
+        final CB.Op<Map<?, ?>> cb = new CB.Op<Map<?, ?>>(getGaActivity()) {
+
             @Override
-            public void onSuccess(final Map<?, ?> result) {
+            public void onUiSuccess(final Map<?, ?> result) {
                 final List txList = (List) result.get("list");
                 final int currentBlock = ((Integer) result.get("cur_block"));
 
-                activity.runOnUiThread(new Runnable() {
-                    public void run() {
+                showTxView(txList.size() > 0);
 
-                        showTxView(txList.size() > 0);
+                final Sha256Hash oldTop = mTxItems.size() > 0 ? mTxItems.get(0).txHash : null;
+                mTxItems.clear();
+                replacedTxs.clear();
 
-                        final Sha256Hash oldTop = mTxItems.size() > 0 ? mTxItems.get(0).txHash : null;
-                        mTxItems.clear();
-                        replacedTxs.clear();
+                for (final Object tx : txList) {
+                    try {
+                        final Map<String, Object> txJSON = (Map) tx;
+                        final ArrayList<String> replacedList = (ArrayList) txJSON.get("replaced_by");
 
-                        for (Object tx : txList) {
-                            try {
-                                Map<String, Object> txJSON = (Map) tx;
-                                ArrayList<String> replacedList = (ArrayList) txJSON.get("replaced_by");
-
-                                if (replacedList == null) {
-                                    mTxItems.add(new TransactionItem(service, txJSON, currentBlock));
-                                    continue;
-                                }
-
-                                for (String replacedBy : replacedList) {
-                                    final Sha256Hash replacedHash = Sha256Hash.wrap(replacedBy);
-                                    if (!replacedTxs.containsKey(replacedHash))
-                                        replacedTxs.put(replacedHash, new ArrayList<Sha256Hash>());
-                                    final Sha256Hash newTxHash = Sha256Hash.wrap((String) txJSON.get("txhash"));
-                                    replacedTxs.get(replacedHash).add(newTxHash);
-                                }
-                            } catch (final ParseException e) {
-                                e.printStackTrace();
-                            }
+                        if (replacedList == null) {
+                            mTxItems.add(new TransactionItem(service, txJSON, currentBlock));
+                            continue;
                         }
 
-                        for (TransactionItem txItem : mTxItems) {
-                            if (replacedTxs.containsKey(txItem.txHash))
-                                for (Sha256Hash replaced : replacedTxs.get(txItem.txHash))
-                                    txItem.replacedHashes.add(replaced);
+                        for (final String replacedBy : replacedList) {
+                            final Sha256Hash replacedHash = Sha256Hash.wrap(replacedBy);
+                            if (!replacedTxs.containsKey(replacedHash))
+                                replacedTxs.put(replacedHash, new ArrayList<Sha256Hash>());
+                            final Sha256Hash newTxHash = Sha256Hash.wrap((String) txJSON.get("txhash"));
+                            replacedTxs.get(replacedHash).add(newTxHash);
                         }
-
-                        txView.getAdapter().notifyDataSetChanged();
-
-                        final Sha256Hash newTop = mTxItems.size() > 0 ? mTxItems.get(0).txHash : null;
-                        if (oldTop != null && newTop != null && !oldTop.equals(newTop)) {
-                            // A new tx has arrived; scroll to the top to show it
-                            txView.smoothScrollToPosition(0);
-                        }
+                    } catch (final ParseException e) {
+                        e.printStackTrace();
                     }
-                });
+                }
 
+                for (final TransactionItem txItem : mTxItems)
+                    if (replacedTxs.containsKey(txItem.txHash))
+                        for (Sha256Hash replaced : replacedTxs.get(txItem.txHash))
+                            txItem.replacedHashes.add(replaced);
+
+                txView.getAdapter().notifyDataSetChanged();
+
+                final Sha256Hash newTop = mTxItems.size() > 0 ? mTxItems.get(0).txHash : null;
+                if (oldTop != null && newTop != null && !oldTop.equals(newTop)) {
+                    // A new tx has arrived; scroll to the top to show it
+                    txView.smoothScrollToPosition(0);
+                }
             }
 
             @Override
-            public void onFailure(final Throwable t) {
+            public void onUiFailure(final Throwable t) {
+                showTxView(false);
                 t.printStackTrace();
-                activity.runOnUiThread(new Runnable() {
-                    public void run() {
-                        showTxView(false);
-                    }
-                });
             }
-        }, service.getExecutor());
+        };
+
+        CB.after(tx, cb, service.getExecutor());
     }
 
     @Override
@@ -309,8 +306,7 @@ public class MainFragment extends SubaccountFragment {
     @Override
     public void setUserVisibleHint(final boolean isVisibleToUser) {
         super.setUserVisibleHint(isVisibleToUser);
-        if (isVisibleToUser) {
+        if (isVisibleToUser)
             hideKeyboard();
-        }
     }
 }

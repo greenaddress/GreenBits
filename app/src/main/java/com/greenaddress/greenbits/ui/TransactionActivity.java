@@ -21,7 +21,6 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.blockstream.libwally.Wally;
 import com.google.common.base.Function;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.greenaddress.greenapi.GAException;
@@ -346,7 +345,7 @@ public class TransactionActivity extends GaActivity {
                                     public void onSuccess(final Boolean result) {
                                         onDisableEdit();
                                     }
-                                });
+                                },service.getExecutor());
                     } else {
                         onDisableEdit();
                     }
@@ -455,7 +454,7 @@ public class TransactionActivity extends GaActivity {
                                 doReplaceByFee(txItem, feerate, tx, null, subAccount,
                                                oldFee, moreInputs, morePrevouts, level);
                             }
-                        });
+                        }, service.getExecutor());
                         return;
                     }
 
@@ -480,11 +479,11 @@ public class TransactionActivity extends GaActivity {
                                     doReplaceByFee(txItem, feerate, tx, (Integer) result.get("pointer"),
                                                    subAccount, oldFee, moreInputs, morePrevouts, level);
                                 }
-                            });
+                            }, service.getExecutor());
                         }
-                    });
+                    }, service.getExecutor());
                 }
-            });
+            }, service.getExecutor());
         }
 
         private void doReplaceByFee(final TransactionItem txItem, final Coin feerate,
@@ -619,39 +618,34 @@ public class TransactionActivity extends GaActivity {
                     final Map<String, Object> twoFacData = new HashMap<>();
                     twoFacData.put("try_under_limits_bump", tx.getFee().subtract(oldFee).longValue());
                     final ListenableFuture<Map<String,Object>> sendFuture = service.sendRawTransaction(tx, twoFacData, true);
-                    Futures.addCallback(sendFuture, new FutureCallback<Map<String,Object>>() {
+                    CB.after(sendFuture, new CB.Op<Map<String,Object>>(gaActivity) {
                         @Override
-                        public void onSuccess(final Map result) {
+                        public void onUiSuccess(final Map result) {
                             // FIXME: Add notification with "Transaction sent"?
-                            gaActivity.finishOnUiThread();
+                            gaActivity.finish();
                         }
 
                         @Override
-                        public void onFailure(final Throwable t) {
+                        public void onUiFailure(final Throwable t) {
                             if (!(t instanceof GAException) || !t.getMessage().equals("http://greenaddressit.com/error#auth")) {
                                 gaActivity.toast(t);
                                 return;
                             }
                             // 2FA is required, prompt the user
-                            gaActivity.runOnUiThread(new Runnable() {
+                            final boolean skipChoice = false;
+                            mTwoFactor = UI.popupTwoFactorChoice(gaActivity, service, skipChoice,
+                                                                         new CB.Runnable1T<String>() {
                                 @Override
-                                public void run() {
-                                    final boolean skipChoice = false;
-                                    mTwoFactor = UI.popupTwoFactorChoice(gaActivity, service, skipChoice,
-                                                                                 new CB.Runnable1T<String>() {
-                                        @Override
-                                        public void run(final String method) {
-                                            showIncreaseSummary(method, oldFee, tx.getFee(), tx);
-                                        }
-                                    });
-                                    if (mTwoFactor != null)
-                                        mTwoFactor.show();
+                                public void run(final String method) {
+                                    showIncreaseSummary(method, oldFee, tx.getFee(), tx);
                                 }
                             });
+                            if (mTwoFactor != null)
+                                mTwoFactor.show();
                         }
                     }, service.getExecutor());
                 }
-            });
+            }, service.getExecutor());
         }
 
         private void showIncreaseSummary(final String method, final Coin oldFee, final Coin newFee, final Transaction signedTx) {
@@ -719,11 +713,11 @@ public class TransactionActivity extends GaActivity {
                             if (twoFacData != null)
                                 twoFacData.put("code", UI.getText(newTx2FACodeText));
                             final ListenableFuture<Map<String,Object>> sendFuture = service.sendRawTransaction(signedTx, twoFacData, false);
-                            Futures.addCallback(sendFuture, new CB.Toast<Map<String,Object>>(gaActivity) {
+                            CB.after(sendFuture, new CB.Toast<Map<String,Object>>(gaActivity) {
                                 @Override
-                                public void onSuccess(final Map result) {
+                                public void onUiSuccess(final Map result) {
                                     // FIXME: Add notification with "Transaction sent"?
-                                    gaActivity.finishOnUiThread();
+                                    gaActivity.finish();
                                 }
                             }, service.getExecutor());
                         }
