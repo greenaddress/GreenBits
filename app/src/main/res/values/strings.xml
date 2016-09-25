@@ -161,7 +161,9 @@
     <string name="emailAddress">email address</string>
     <string name="phoneNumber">phone number</string>
     <string name="newAddress">New</string>
+    <string name="newAddressIcon" translatable="false">&#xf067;</string>
     <string name="copyAddress">Copy</string>
+    <string name="copyAddressIcon" translatable="false">&#xf0c5;</string>
     <string name="txReceivedOn">Received on</string>
     <string name="twoFacGauthTextCode">Or you can use the following code (touch to copy) : %1$s. Remember to back it up!</string>
     <string name="trustedspv">Only connect to trusted peer[s] for SPV</string>
