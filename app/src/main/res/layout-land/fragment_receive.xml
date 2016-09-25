@@ -39,6 +39,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="droid"
             android:gravity="start"
+            android:id="@+id/addressTitle"
             android:text="@string/receiveAddressSubTitle"
             android:textColor="@color/textColor"
             android:textSize="24sp" />
@@ -81,7 +82,7 @@
                         android:layout_height="fill_parent"
                         android:gravity="center"
                         android:paddingBottom="4dp"
-                        android:text="&#xf0c5;"
+                        android:text="@string/copyAddressIcon"
                         android:textColor="@color/accent"
                         android:textSize="34sp" />
                     <TextView
@@ -90,7 +91,7 @@
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:textColor="@color/accent"
-                        android:singleLine="true"
+                        android:maxLines="1"
                         android:text="@string/copyAddress"/>
                 </LinearLayout>
 
@@ -106,15 +107,16 @@
                         android:layout_height="fill_parent"
                         android:gravity="center"
                         android:paddingBottom="4dp"
-                        android:text="&#xf067;"
+                        android:text="@string/newAddressIcon"
                         android:textColor="@color/accent"
                         android:textSize="34sp" />
                     <TextView
+                        android:id="@+id/receiveNewAddressText"
                         android:layout_width="fill_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:textColor="@color/accent"
-                        android:singleLine="true"
+                        android:maxLines="1"
                         android:text="@string/newAddress"/>
                 </LinearLayout>
 

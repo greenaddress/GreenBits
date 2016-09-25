@@ -10,10 +10,8 @@ import android.content.Intent;
 import android.graphics.drawable.BitmapDrawable;
 import android.nfc.Tag;
 import android.os.Bundle;
-import android.text.Html;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -122,10 +120,8 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
         mView = inflater.inflate(R.layout.fragment_receive, container, false);
         final TextView receiveAddress = UI.find(mView, R.id.receiveAddressText);
         final TextView copyIcon = UI.find(mView, R.id.receiveCopyIcon);
-        final TextView copyText = UI.find(mView, R.id.receiveCopyText);
-        UI.hide(copyIcon, copyText);
+        final FontAwesomeTextView newAddressIcon = UI.find(mView, R.id.receiveNewAddressIcon);
 
-        final TextView newAddressIcon = UI.find(mView, R.id.receiveNewAddressIcon);
         final ImageView imageView = UI.find(mView, R.id.receiveQrImageView);
         copyIcon.setOnClickListener(
                 new View.OnClickListener() {
@@ -159,8 +155,7 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
                         final BitmapDrawable bd = new BitmapDrawable(getResources(), result.getQRCode());
 
                         hideWaitDialog();
-                        UI.show(copyIcon, copyText);
-                        stopNewAddressAnimation(mView);
+                        onNewAddress(mView);
                         bd.setFilterBitmap(false);
                         imageView.setImageDrawable(bd);
 
@@ -203,8 +198,7 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
                 getActivity().runOnUiThread(new Runnable() {
                     public void run() {
                         hideWaitDialog();
-                        stopNewAddressAnimation(mView);
-                        UI.show(copyIcon, copyText);
+                        onNewAddress(mView);
                     }
                 });
             }
@@ -238,35 +232,35 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
 
         popupWaitDialog(R.string.generating_address);
         if (v != null)
-            startNewAddressAnimation(v);
+            beforeNewAddress(v);
 
         Futures.addCallback(getGAService().getNewAddressBitmap(mSubAccount),
                             mNewAddressCallback, getGAService().getExecutor());
-     }
-
-     private void stopNewAddressAnimation(final View v) {
-        final FontAwesomeTextView newAddressIcon = UI.find(v, R.id.receiveNewAddressIcon);
-        newAddressIcon.clearAnimation();
-        newAddressIcon.setText(Html.fromHtml("&#xf067;"));
-        final TextView copyIcon = UI.find(v, R.id.receiveCopyIcon);
-        final TextView copyText = UI.find(v, R.id.receiveCopyText);
-        UI.show(copyIcon, copyText);
     }
 
-    private void startNewAddressAnimation(final View v) {
+    private void onNewAddress(final View v) {
+        final FontAwesomeTextView newAddressIcon = UI.find(v, R.id.receiveNewAddressIcon);
+        final TextView copyIcon = UI.find(v, R.id.receiveCopyIcon);
+        final TextView copyText = UI.find(v, R.id.receiveCopyText);
+        final TextView receiveIcon = UI.find(v, R.id.receiveNewAddressText);
+        final TextView addressTitle = UI.find(v, R.id.addressTitle);
+
+        UI.show(copyIcon, copyText, newAddressIcon, receiveIcon, addressTitle);
+    }
+
+    private void beforeNewAddress(final View v) {
         if (getActivity() == null)
             return;
 
         final FontAwesomeTextView newAddressIcon = UI.find(v, R.id.receiveNewAddressIcon);
-        newAddressIcon.setText(Html.fromHtml("&#xf021;"));
-        newAddressIcon.setAwesomeTypeface();
-        newAddressIcon.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 34);
-
         final TextView receiveAddress = UI.find(v, R.id.receiveAddressText);
         final TextView copyIcon = UI.find(v, R.id.receiveCopyIcon);
         final TextView copyText = UI.find(v, R.id.receiveCopyText);
         final ImageView imageView = UI.find(v, R.id.receiveQrImageView);
-        UI.hide(copyIcon, copyText);
+        final TextView receiveIcon = UI.find(mView, R.id.receiveNewAddressText);
+        final TextView addressTitle = UI.find(v, R.id.addressTitle);
+
+        UI.hide(copyIcon, copyText, newAddressIcon, receiveIcon, addressTitle);
         receiveAddress.setText("");
         imageView.setImageBitmap(null);
     }
@@ -293,7 +287,7 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
     protected void onSubaccountChanged(final int input) {
         mSubAccount = input;
         if (mView != null)
-            startNewAddressAnimation(mView);
+            beforeNewAddress(mView);
 
         if (!mSettingQrCode)
             getNewAddress(null);

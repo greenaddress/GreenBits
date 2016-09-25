@@ -161,7 +161,9 @@
     <string name="emailAddress">email address</string>
     <string name="phoneNumber">phone number</string>
     <string name="newAddress">New</string>
+    <string name="newAddressIcon" translatable="false">&#xf067;</string>
     <string name="copyAddress">Copy</string>
+    <string name="copyAddressIcon" translatable="false">&#xf0c5;</string>
     <string name="txReceivedOn">Received on</string>
     <string name="twoFacGauthTextCode">Or you can use the following code (touch to copy) : %1$s. Remember to back it up!</string>
     <string name="trustedspv">Only connect to trusted peer[s] for SPV</string>
@@ -240,7 +242,7 @@
     <string name="remember_watch_only">Remember username</string>
     <string name="remember_warn_title">Warning: The username will be saved on device</string>
     <string name="remember_warn_content">Saving the username on the device can be dangerous; if someone can access your memory they will have access to your username in clear text. If you choose to continue, please press "OK".</string>
-    <string name="generating_address">Generating address...</string>
-    <string name="loading_transactions">Loading transactions...</string>
+    <string name="generating_address">Generating address&#8230;</string>
+    <string name="loading_transactions">Loading transactions&#8230;</string>
 
 </resources>
