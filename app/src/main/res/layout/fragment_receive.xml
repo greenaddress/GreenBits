@@ -68,7 +68,7 @@
                         android:layout_width="fill_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center"
-                        android:singleLine="true"
+                        android:maxLines="1"
                         android:textColor="@color/accent"
                         android:text="@string/copyAddress"/>
                 </LinearLayout>
@@ -92,7 +92,7 @@
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:textColor="@color/accent"
-                        android:singleLine="true"
+                        android:maxLines="1"
                         android:text="@string/newAddress"/>
                 </LinearLayout>
 
