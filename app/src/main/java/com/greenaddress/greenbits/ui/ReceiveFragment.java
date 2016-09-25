@@ -242,9 +242,9 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
 
         Futures.addCallback(getGAService().getNewAddressBitmap(mSubAccount),
                             mNewAddressCallback, getGAService().getExecutor());
-     }
+    }
 
-     private void onNewAddress(final View v) {
+    private void onNewAddress(final View v) {
         final FontAwesomeTextView newAddressIcon = UI.find(v, R.id.receiveNewAddressIcon);
         newAddressIcon.clearAnimation();
         newAddressIcon.setText(Html.fromHtml("&#xf067;"));
