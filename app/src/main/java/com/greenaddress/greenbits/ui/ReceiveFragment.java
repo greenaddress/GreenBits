@@ -160,7 +160,7 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
 
                         hideWaitDialog();
                         UI.show(copyIcon, copyText);
-                        stopNewAddressAnimation(mView);
+                        onNewAddress(mView);
                         bd.setFilterBitmap(false);
                         imageView.setImageDrawable(bd);
 
@@ -203,7 +203,7 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
                 getActivity().runOnUiThread(new Runnable() {
                     public void run() {
                         hideWaitDialog();
-                        stopNewAddressAnimation(mView);
+                        onNewAddress(mView);
                         UI.show(copyIcon, copyText);
                     }
                 });
@@ -238,13 +238,13 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
 
         popupWaitDialog(R.string.generating_address);
         if (v != null)
-            startNewAddressAnimation(v);
+            beforeNewAddress(v);
 
         Futures.addCallback(getGAService().getNewAddressBitmap(mSubAccount),
                             mNewAddressCallback, getGAService().getExecutor());
      }
 
-     private void stopNewAddressAnimation(final View v) {
+     private void onNewAddress(final View v) {
         final FontAwesomeTextView newAddressIcon = UI.find(v, R.id.receiveNewAddressIcon);
         newAddressIcon.clearAnimation();
         newAddressIcon.setText(Html.fromHtml("&#xf067;"));
@@ -253,7 +253,7 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
         UI.show(copyIcon, copyText);
     }
 
-    private void startNewAddressAnimation(final View v) {
+    private void beforeNewAddress(final View v) {
         if (getActivity() == null)
             return;
 
@@ -293,7 +293,7 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
     protected void onSubaccountChanged(final int input) {
         mSubAccount = input;
         if (mView != null)
-            startNewAddressAnimation(mView);
+            beforeNewAddress(mView);
 
         if (!mSettingQrCode)
             getNewAddress(null);
