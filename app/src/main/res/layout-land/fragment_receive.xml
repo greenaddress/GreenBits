@@ -39,6 +39,7 @@
             android:layout_height="wrap_content"
             android:fontFamily="droid"
             android:gravity="start"
+            android:id="@+id/addressTitle"
             android:text="@string/receiveAddressSubTitle"
             android:textColor="@color/textColor"
             android:textSize="24sp" />
@@ -110,6 +111,7 @@
                         android:textColor="@color/accent"
                         android:textSize="34sp" />
                     <TextView
+                        android:id="@+id/receiveNewAddressText"
                         android:layout_width="fill_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center"
