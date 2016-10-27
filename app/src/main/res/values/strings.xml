@@ -258,4 +258,15 @@
     <string name="fa_sign_in" translatable="false">&#xf090;</string>
     <string name="fa_sign_out" translatable="false">&#xf08b;</string>
     <string name="fa_usd" translatable="false">&#xf155;</string>
+    <string name="fa_flag" translatable="false">&#xf024;</string>
+    <string-array name="languages" translatable="false">
+        <item>English</item>
+        <item>Español</item>
+        <item>Français</item>
+        <item>Italiano</item>
+        <item>日本語:にほんご</item>
+        <item>正體字/繁體字</item>
+        <item>正体字/繁体字</item>
+    </string-array>
+    <string name="select_language">Select language</string>
 </resources>

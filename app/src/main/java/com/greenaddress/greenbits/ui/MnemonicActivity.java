@@ -62,6 +62,7 @@ public class MnemonicActivity extends LoginActivity {
     private EditText mMnemonicText;
     private CircularProgressButton mOkButton;
 
+    private int mLang;
 
     private void showErrorCorrection(final String closeWord, final String badWord) {
         if (closeWord == null)
@@ -93,7 +94,7 @@ public class MnemonicActivity extends LoginActivity {
 
     private boolean validateMnemonic(final String mnemonic) {
         try {
-            Wally.bip39_mnemonic_validate(Wally.bip39_get_wordlist("en"), mnemonic);
+            Wally.bip39_mnemonic_validate(CryptoHelper.LANGS[mLang], mnemonic);
             return true;
         } catch (final IllegalArgumentException e) {
             for (final String w : mnemonic.split(" "))
@@ -147,7 +148,7 @@ public class MnemonicActivity extends LoginActivity {
                 return Futures.transform(askForPassphrase(), new AsyncFunction<String, LoginData>() {
                     @Override
                     public ListenableFuture<LoginData> apply(final String passphrase) {
-                        return mService.login(CryptoHelper.encrypted_mnemonic_to_mnemonic(mnemonics, passphrase));
+                        return mService.login(CryptoHelper.encrypted_mnemonic_to_mnemonic(mLang, mnemonics, passphrase));
                     }
                 });
             }
@@ -212,8 +213,8 @@ public class MnemonicActivity extends LoginActivity {
 
     protected int getMainViewId() { return R.layout.activity_mnemonic; }
 
-    public static void initWordList(final ArrayList<String> wordsArray, final Set<String> words) {
-        final Object en = Wally.bip39_get_wordlist("en");
+    public static void initWordList(final ArrayList<String> wordsArray, final Set<String> words, final int lang) {
+        final Object en = CryptoHelper.LANGS[lang];
         for (int i = 0; i < Wally.BIP39_WORDLIST_LEN; ++i) {
             wordsArray.add(Wally.bip39_get_word(en, i));
             if (words != null)
@@ -221,16 +222,37 @@ public class MnemonicActivity extends LoginActivity {
         }
     }
 
+    private void initWords() {
+        mWordsArray = new ArrayList<>(Wally.BIP39_WORDLIST_LEN);
+        mWords = new HashSet<>(Wally.BIP39_WORDLIST_LEN);
+        initWordList(mWordsArray, mWords, mLang);
+    }
+
     @Override
     protected void onCreateWithService(final Bundle savedInstanceState) {
         Log.i(TAG, getIntent().getType() + "" + getIntent());
+        if (savedInstanceState != null)
+            mLang = savedInstanceState.getInt("lang");
 
-        mWordsArray = new ArrayList<>(Wally.BIP39_WORDLIST_LEN);
-        mWords = new HashSet<>(Wally.BIP39_WORDLIST_LEN);
-        initWordList(mWordsArray, mWords);
+        initWords();
 
         mMnemonicText = UI.find(this, R.id.mnemonicText);
-        mOkButton = UI.find(this,R.id.mnemonicOkButton);
+        mOkButton = UI.find(this, R.id.mnemonicOkButton);
+
+        final TextView langIconText = UI.find(this, R.id.loginLangIcon);
+        langIconText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                UI.getLanguageDialog(MnemonicActivity.this).itemsCallbackSingleChoice(mLang, new MaterialDialog.ListCallbackSingleChoice() {
+                    @Override
+                    public boolean onSelection(final MaterialDialog dialog, final View view, final int which, final CharSequence text) {
+                        mLang = which;
+                        initWords();
+                        return true;
+                    }
+                }).show();
+            }
+        });
 
         mOkButton.setIndeterminateProgressMode(true);
 
@@ -347,7 +369,7 @@ public class MnemonicActivity extends LoginActivity {
 
         if (intent.getType().equals("x-gait/mnc")) {
             // Unencrypted NFC
-            final String mnemonics = CryptoHelper.mnemonic_from_bytes(getNFCPayload(intent));
+            final String mnemonics = CryptoHelper.mnemonic_from_bytes(mLang, getNFCPayload(intent));
             mMnemonicText.setText(mnemonics);
             loginOnUiThread(mnemonics);
 
@@ -356,7 +378,7 @@ public class MnemonicActivity extends LoginActivity {
             CB.after(askForPassphrase(), new CB.Op<String>() {
                 @Override
                 public void onSuccess(final String passphrase) {
-                    String mnemonics = CryptoHelper.encrypted_mnemonic_to_mnemonic(getNFCPayload(intent), passphrase);
+                    String mnemonics = CryptoHelper.encrypted_mnemonic_to_mnemonic(mLang, getNFCPayload(intent), passphrase);
                     mMnemonicText.setText(mnemonics);
                     loginOnUiThread(mnemonics);
                 }
@@ -454,6 +476,12 @@ public class MnemonicActivity extends LoginActivity {
                 else
                     shortToast(R.string.err_qrscan_requires_camera_permissions);
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(final Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putInt("lang", mLang);
     }
 }
 

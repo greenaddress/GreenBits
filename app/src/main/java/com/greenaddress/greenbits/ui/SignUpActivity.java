@@ -28,7 +28,6 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.afollestad.materialdialogs.Theme;
 import com.dd.CircularProgressButton;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.greenaddress.greenapi.CryptoHelper;
@@ -48,15 +47,28 @@ public class SignUpActivity extends LoginActivity {
     private TextView nfcTagsWritten;
     private ImageView signupNfcIcon;
     private TextView mnemonicText;
-    private ListenableFuture<LoginData> onSignUp;
     private final Runnable mDialogCB = new Runnable() { public void run() { mWriteMode = false; } };
+    private int mLang;
+    private boolean mIsTosChecked;
 
     @Override
     protected int getMainViewId() { return R.layout.activity_sign_up; }
 
     @Override
-    protected void onCreateWithService(final Bundle savedInstanceState) {
+    protected void onSaveInstanceState(final Bundle savedInstanceState) {
+        super.onSaveInstanceState(savedInstanceState);
+        savedInstanceState.putInt("lang", mLang);
+        savedInstanceState.putBoolean("nfcWriteMode", mWriteMode);
+        savedInstanceState.putBoolean("isTosChecked", mIsTosChecked);
+    }
 
+    @Override
+    protected void onCreateWithService(final Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            mLang = savedInstanceState.getInt("lang");
+            mWriteMode = savedInstanceState.getBoolean("nfcWriteMode");
+            mIsTosChecked = savedInstanceState.getBoolean("isTosChecked");
+        }
         final CircularProgressButton signupContinueButton = UI.find(this, R.id.signupContinueButton);
         final TextView tos = UI.find(this, R.id.textTosLink);
         final CheckBox checkBox = UI.find(this, R.id.signupAcceptCheckBox);
@@ -67,10 +79,7 @@ public class SignUpActivity extends LoginActivity {
         mNfcPendingIntent = PendingIntent.getActivity(this, 0,
                 new Intent(this, SignUpActivity.class).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
 
-        if (onSignUp != null) {
-            checkBox.setEnabled(false);
-            checkBox.setChecked(true);
-        }
+        checkBox.setChecked(mIsTosChecked);
 
         tos.setMovementMethod(LinkMovementMethod.getInstance());
 
@@ -79,12 +88,13 @@ public class SignUpActivity extends LoginActivity {
         final View qrView = getLayoutInflater().inflate(R.layout.dialog_qrcode, null, false);
 
         final TextView qrCodeIcon = UI.find(this, R.id.signupQrCodeIcon);
+        final TextView langIcon = UI.find(this, R.id.signupLangIcon);
+
         final ImageView qrcodeMnemonic = UI.find(qrView, R.id.qrInDialogImageView);
-        mnemonicText.setText(mService.getSignUpMnemonic());
+        mnemonicText.setText(mService.getSignUpMnemonic(mLang));
 
         qrCodeIcon.setOnClickListener(new View.OnClickListener() {
             public void onClick(final View v) {
-                qrCodeIcon.clearAnimation();
                 if (mnemonicDialog == null) {
                     qrcodeMnemonic.setLayoutParams(UI.getScreenLayout(SignUpActivity.this, 0.8));
 
@@ -93,72 +103,86 @@ public class SignUpActivity extends LoginActivity {
                     mnemonicDialog.setContentView(qrView);
                 }
                 mnemonicDialog.show();
-                final BitmapDrawable bd = new BitmapDrawable(getResources(), mService.getSignUpQRCode());
+                final BitmapDrawable bd = new BitmapDrawable(getResources(), mService.getSignUpQRCode(mLang));
                 bd.setFilterBitmap(false);
                 qrcodeMnemonic.setImageDrawable(bd);
+            }
+        });
+
+        langIcon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                UI.getLanguageDialog(SignUpActivity.this).itemsCallbackSingleChoice(mLang, new MaterialDialog.ListCallbackSingleChoice() {
+                    @Override
+                    public boolean onSelection(final MaterialDialog dialog, final View view, final int which, final CharSequence text) {
+                        mLang = which;
+                        mnemonicText.setText(mService.getSignUpMnemonic(mLang));
+                        return true;
+                    }
+                }).show();
             }
         });
 
         checkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(final CompoundButton compoundButton, final boolean isChecked) {
-                if (onSignUp == null)
-                    if (mService.onConnected != null) {
-                        signupContinueButton.setEnabled(true);
-                        checkBox.setEnabled(false);
-                        onSignUp = Futures.transform(mService.onConnected, new AsyncFunction<Void, LoginData>() {
-                            @Override
-                            public ListenableFuture<LoginData> apply(final Void input) throws Exception {
-                                return mService.signup(UI.getText(mnemonicText));
-                            }
-                        }, mService.getExecutor());
-                    } else if (isChecked) {
-                        SignUpActivity.this.toast("You are not connected, please wait");
-                        checkBox.setChecked(false);
-                    }
+                mIsTosChecked = isChecked;
             }
         });
 
         signupContinueButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(final View v) {
-                if (onSignUp != null) {
 
-                    signupContinueButton.setIndeterminateProgressMode(true);
-                    signupContinueButton.setProgress(50);
-                    Futures.addCallback(onSignUp, new FutureCallback<LoginData>() {
+                if (!mIsTosChecked) {
+                    SignUpActivity.this.toast("Please secure your passphrase and confirm you agree to the Terms of Service");
+                    return;
+                }
 
-                        @Override
-                        public void onSuccess(final LoginData result) {
-                            SignUpActivity.this.runOnUiThread(new Runnable() {
-                                public void run() {
-                                    signupContinueButton.setProgress(100);
-                                }
-                            });
+                if (mService.onConnected == null) {
+                    SignUpActivity.this.toast("You are not connected, please wait");
+                    return;
+                }
 
-                            mService.resetSignUp();
-                            onSignUp = null;
-                            final Intent savePin = PinSaveActivity.createIntent(SignUpActivity.this, mService.getMnemonics());
-                            startActivityForResult(savePin, PINSAVE);
-                        }
+                if (signupContinueButton.getProgress() == 50)
+                    return;
 
-                        @Override
-                        public void onFailure(final Throwable t) {
-                            t.printStackTrace();
-                            SignUpActivity.this.runOnUiThread(new Runnable() {
-                                public void run() {
-                                    signupContinueButton.setProgress(0);
-                                }
-                            });
-                        }
-                    }, mService.getExecutor());
-                } else
-                    if (!checkBox.isChecked())
-                        SignUpActivity.this.toast("Please secure your passphrase and confirm you agree to the Terms of Service");
-                    else
-                        SignUpActivity.this.toast("Signup in progress");
+                checkBox.setEnabled(false);
+                signupContinueButton.setIndeterminateProgressMode(true);
+                signupContinueButton.setProgress(50);
+
+                final ListenableFuture<LoginData> loggedIn = Futures.transform(mService.onConnected, new AsyncFunction<Void, LoginData>() {
+                    @Override
+                    public ListenableFuture<LoginData> apply(final Void input) throws Exception {
+                        return mService.signup(UI.getText(mnemonicText));
+                    }
+                }, mService.getExecutor());
+
+
+                CB.after(loggedIn, new CB.Op<LoginData>() {
+                    @Override
+                    public void onSuccess(final LoginData result) {
+                        mService.resetSignUp();
+                        final Intent savePin = PinSaveActivity.createIntent(SignUpActivity.this, mService.getMnemonics());
+                        startActivityForResult(savePin, PINSAVE);
+                        finishOnUiThread();
+                    }
+
+                    @Override
+                    public void onFailure(final Throwable t) {
+                        t.printStackTrace();
+                        SignUpActivity.this.runOnUiThread(new Runnable() {
+                            public void run() {
+                                signupContinueButton.setProgress(0);
+                                checkBox.setEnabled(true);
+                                SignUpActivity.this.toast(t.getMessage());
+                            }
+                        });
+                    }
+                });
             }
         });
+
         signupNfcIcon = UI.find(this, R.id.signupNfcIcon);
 
         nfcDialog = new MaterialDialog.Builder(SignUpActivity.this)
@@ -208,7 +232,7 @@ public class SignUpActivity extends LoginActivity {
             final NdefRecord[] record = new NdefRecord[1];
 
             record[0] = NdefRecord.createMime("x-gait/mnc",
-                    CryptoHelper.mnemonic_to_bytes(UI.getText(mnemonicText)));
+                    CryptoHelper.mnemonic_to_bytes(mLang, UI.getText(mnemonicText)));
 
             final NdefMessage message = new NdefMessage(record);
             final int size = message.toByteArray().length;
@@ -249,12 +273,8 @@ public class SignUpActivity extends LoginActivity {
 
     @Override
     public void onBackPressed() {
-
-        if (onSignUp != null) {
-            mService.resetSignUp();
-            onSignUp = null;
-            mService.disconnect(true);
-        }
+        mService.resetSignUp();
+        mService.disconnect(true);
         super.onBackPressed();
     }
 

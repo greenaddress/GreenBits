@@ -253,4 +253,11 @@ public abstract class UI {
             v.setText(res);
         return res;
     }
+
+    public static MaterialDialog.Builder getLanguageDialog(final Activity activity) {
+        return new MaterialDialog.Builder(activity)
+                .title(R.string.select_language)
+                .items(R.array.languages)
+                .positiveText(R.string.choose);
+    }
 }

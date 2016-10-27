@@ -13,7 +13,16 @@ import java.util.Arrays;
 public class CryptoHelper {
 
     private final static int BL = Wally.AES_BLOCK_LEN;
-    private final static Object WL = Wally.bip39_get_wordlist("en");
+
+    public final static Object[] LANGS = new Object[] {
+            Wally.bip39_get_wordlist("en"),
+            Wally.bip39_get_wordlist("es"),
+            Wally.bip39_get_wordlist("fr"),
+            Wally.bip39_get_wordlist("it"),
+            Wally.bip39_get_wordlist("jp"),
+            Wally.bip39_get_wordlist("zhs"),
+            Wally.bip39_get_wordlist("zht")
+    };
 
     public static byte[] randomBytes(int len) {
         final byte[] b = new byte[len];
@@ -37,29 +46,29 @@ public class CryptoHelper {
         return seed;
     }
 
-    public static byte[] mnemonic_to_bytes(final String mnemonic) {
-        return mnemonic_to_bytes(mnemonic, Wally.BIP39_ENTROPY_LEN_256);
+    public static byte[] mnemonic_to_bytes(final int lang, final String mnemonic) {
+        return mnemonic_to_bytes(lang, mnemonic, Wally.BIP39_ENTROPY_LEN_256);
     }
 
-    private static byte[] mnemonic_to_bytes(final String mnemonic, final int size) {
+    private static byte[] mnemonic_to_bytes(final int lang, final String mnemonic, final int size) {
         final byte[] buf = new byte[size];
-        final int len = Wally.bip39_mnemonic_to_bytes(WL, mnemonic, buf);
+        final int len = Wally.bip39_mnemonic_to_bytes(LANGS[lang], mnemonic, buf);
         if (len > buf.length) throw new IllegalArgumentException();
         return len == size ? buf: Arrays.copyOf(buf, len);
     }
 
-    public static String encrypted_mnemonic_to_mnemonic(final String mnemonics, final String pass) {
-        return mnemonic_from_bytes(MnemonicHelper.decryptMnemonic(
-                mnemonic_to_bytes(mnemonics, Wally.BIP39_ENTROPY_LEN_288),
+    public static String encrypted_mnemonic_to_mnemonic(final int lang, final String mnemonics, final String pass) {
+        return mnemonic_from_bytes(lang, MnemonicHelper.decryptMnemonic(
+                mnemonic_to_bytes(lang, mnemonics, Wally.BIP39_ENTROPY_LEN_288),
                 Normalizer.normalize(pass, Normalizer.Form.NFC)));
     }
 
-    public static String encrypted_mnemonic_to_mnemonic(final byte[] data, final String pass) {
-        return CryptoHelper.mnemonic_from_bytes(MnemonicHelper.decryptMnemonic(data, pass));
+    public static String encrypted_mnemonic_to_mnemonic(final int lang, final byte[] data, final String pass) {
+        return CryptoHelper.mnemonic_from_bytes(lang, MnemonicHelper.decryptMnemonic(data, pass));
     }
 
-    public static String mnemonic_from_bytes(final byte[] data) {
-        return Wally.bip39_mnemonic_from_bytes(WL, data);
+    public static String mnemonic_from_bytes(final int lang, final byte[] data) {
+        return Wally.bip39_mnemonic_from_bytes(LANGS[lang], data);
     }
 
     private static byte[] getKey(final byte[] password, final byte[] salt) {

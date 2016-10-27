@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="72dp"
+    android:layout_height="wrap_content"
+    android:layout_alignParentRight="true"
+    android:layout_centerVertical="true"
+    android:padding="8dp"
+    android:orientation="vertical">
+
+    <com.greenaddress.greenbits.ui.FontAwesomeTextView
+        android:id="@+id/signupLangIcon"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:gravity="center"
+        android:text="@string/fa_flag"
+        android:textColor="@color/accent"
+        android:textSize="36sp" />
+    <com.greenaddress.greenbits.ui.FontAwesomeTextView
+        android:id="@+id/signupQrCodeIcon"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:gravity="center"
+        android:text="@string/fa_qrcode"
+        android:textColor="@color/accent"
+        android:textSize="36sp" />
+    <ImageView
+        android:id="@+id/signupNfcIcon"
+        android:padding="12dp"
+        android:contentDescription="NFC Logo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_nfc_48px_accent"
+        android:gravity="center" />
+
+</LinearLayout>
