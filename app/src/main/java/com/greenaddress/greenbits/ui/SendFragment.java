@@ -123,7 +123,7 @@ public class SendFragment extends SubaccountFragment {
                 service.requestTwoFacCode(method, "send_tx", null);
         }
 
-        mSummary = UI.popup(gaActivity, R.string.newTxTitle, R.string.send, R.string.cancel)
+        mSummary = UI.popup(gaActivity, R.string.newTxTitle, R.string.confirm, R.string.cancel)
                 .customView(v, true)
                 .onPositive(new MaterialDialog.SingleButtonCallback() {
                     @Override
@@ -154,6 +154,8 @@ public class SendFragment extends SubaccountFragment {
                                         mNoteText.setText("");
                                         mNoteText.setVisibility(View.INVISIBLE);
 
+                                        mSendButton.setText(R.string.send);
+
                                         final ViewPager viewPager = UI.find(gaActivity, R.id.container);
                                         viewPager.setCurrentItem(1);
                                     }
@@ -171,6 +173,7 @@ public class SendFragment extends SubaccountFragment {
         final GaActivity gaActivity = getGaActivity();
 
         if (URI.getPaymentRequestUrl() != null) {
+            mSendButton.setText(R.string.sendPay);
             final ProgressBar bip70Progress = UI.find(mView, R.id.sendBip70ProgressBar);
             UI.show(bip70Progress);
             mRecipientEdit.setEnabled(false);
@@ -222,6 +225,7 @@ public class SendFragment extends SubaccountFragment {
                                     mRecipientEdit.setEnabled(true);
                                     mSendButton.setEnabled(true);
                                     UI.show(mNoteIcon);
+                                    mSendButton.setText(R.string.send);
                                 }
                             });
                         }

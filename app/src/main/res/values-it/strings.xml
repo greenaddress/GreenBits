@@ -22,7 +22,7 @@
   <string name="sweepAddressTitle">Preleva tutto da qrcode</string>
   <string name="twoFactorChoicesTitle">Scegli l\'autenticazione a due fattori</string>
   <string name="choose">SCEGLI</string>
-  <string name="cancel">CANCELLA</string>
+  <string name="cancel">ANNULLA</string>
   <string name="attemptsLeft">%1$d tentativi rimasti</string>
   <string-array name="twoFactorChoices">
     <item>Email</item>
@@ -198,4 +198,6 @@
   <string name="generating_address">Generazione indirizzo...</string>
   <string name="loading_transactions">Caricamento transazioni...</string>
   <string name="transactionCompleted">Transazione completata con successo</string>
+  <string name="sendPay">Paga</string>
+  <string name="confirm">Conferma</string>
 </resources>
