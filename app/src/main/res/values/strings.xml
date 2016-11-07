@@ -260,4 +260,5 @@
     <string name="fa_usd" translatable="false">&#xf155;</string>
     <string name="transactionCompleted">Transaction successfully completed</string>
     <string name="sendPay">Pay</string>
+    <string name="confirm">Confirm</string>
 </resources>

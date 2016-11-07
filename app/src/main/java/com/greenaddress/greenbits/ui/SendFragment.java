@@ -123,7 +123,7 @@ public class SendFragment extends SubaccountFragment {
                 service.requestTwoFacCode(method, "send_tx", null);
         }
 
-        mSummary = UI.popup(gaActivity, R.string.newTxTitle, R.string.send, R.string.cancel)
+        mSummary = UI.popup(gaActivity, R.string.newTxTitle, R.string.confirm, R.string.cancel)
                 .customView(v, true)
                 .onPositive(new MaterialDialog.SingleButtonCallback() {
                     @Override
