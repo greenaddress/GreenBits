@@ -139,4 +139,5 @@
   <string name="copyAddress">Kopieren</string>
   <string name="txReceivedOn">Empfangsadresse</string>
   <string name="twoFacGauthTextCode">Oder sie benutzen den folgenden Code: %s. Vergessen sie nicht in zu sichern!</string>
+  <string name="sendPay"></string>
 </resources>

@@ -259,4 +259,5 @@
     <string name="fa_sign_out" translatable="false">&#xf08b;</string>
     <string name="fa_usd" translatable="false">&#xf155;</string>
     <string name="transactionCompleted">Transaction successfully completed</string>
+    <string name="sendPay">Pay</string>
 </resources>
