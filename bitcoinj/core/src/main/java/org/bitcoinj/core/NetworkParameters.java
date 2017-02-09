@@ -55,12 +55,14 @@ public abstract class NetworkParameters {
     public static final String ID_MAINNET = "org.bitcoin.production";
     /** The string returned by getId() for the testnet. */
     public static final String ID_TESTNET = "org.bitcoin.test";
-    /** The string returned by getId() for the testnet. */
-    public static final String ID_ALPHANET = "org.bitcoin.alpha";
     /** The string returned by getId() for regtest mode. */
     public static final String ID_REGTEST = "org.bitcoin.regtest";
     /** Unit test network. */
     public static final String ID_UNITTESTNET = "org.bitcoinj.unittest";
+    /** The string returned by getId() for alpha. */
+    public static final String ID_ALPHANET = "org.bitcoin.alpha";
+    /** The string returned by getId() for elements. */
+    public static final String ID_ELEMENTS = "org.bitcoin.elements";
 
     /** The string used by the payment protocol to represent the main net. */
     public static final String PAYMENT_PROTOCOL_ID_MAINNET = "main";
@@ -70,6 +72,7 @@ public abstract class NetworkParameters {
     public static final String PAYMENT_PROTOCOL_ID_UNIT_TESTS = "unittest";
     public static final String PAYMENT_PROTOCOL_ID_REGTEST = "regtest";
     public static final String PAYMENT_PROTOCOL_ID_ALPHANET = "alpha";
+    public static final String PAYMENT_PROTOCOL_ID_ELEMENTS = "elements";
 
 
     // TODO: Seed nodes should be here as well.
@@ -230,7 +233,9 @@ public abstract class NetworkParameters {
             return RegTestParams.get();
         } else if (id.equals(ID_ALPHANET)) {
             return AlphaNetParams.get();
-        }  else {
+        } else if (id.equals(ID_ELEMENTS)) {
+            return ElementsNetParams.get();
+        } else {
             return null;
         }
     }
@@ -248,6 +253,8 @@ public abstract class NetworkParameters {
             return RegTestParams.get();
         } else if (pmtProtocolId.equals(PAYMENT_PROTOCOL_ID_ALPHANET)) {
             return AlphaNetParams.get();
+        } else if (pmtProtocolId.equals(PAYMENT_PROTOCOL_ID_ELEMENTS)) {
+            return ElementsNetParams.get();
         } else {
             return null;
         }
