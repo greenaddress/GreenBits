@@ -142,6 +142,7 @@ public class MainFragment extends SubaccountFragment {
 
     @Override
     protected void onBalanceUpdated() {
+        Log.d(TAG, "onBalanceUpdated -> " + TAG);
         updateBalance();
         reloadTransactions(false, false);
     }
