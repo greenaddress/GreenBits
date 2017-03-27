@@ -332,7 +332,6 @@ public class MainFragment extends SubaccountFragment {
                 t.printStackTrace();
                 activity.runOnUiThread(new Runnable() {
                     public void run() {
-                        showTxView(false);
                         hideWaitDialog();
                         if (mSwipeRefreshLayout != null)
                             mSwipeRefreshLayout.setRefreshing(false);
