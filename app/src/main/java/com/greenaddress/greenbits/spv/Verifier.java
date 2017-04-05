@@ -68,7 +68,7 @@ class Verifier {
             outValue = outValue.add(out.getValue());
 
         final Coin fee = inValue.subtract(outValue);
-        final Coin minFee = service.getMinFee();
+        final Coin minFee = service.getMinFeeRate();
         if (fee.isLessThan(minFee) && Network.NETWORK != RegTestParams.get())
             feeError("small", fee, minFee);
 

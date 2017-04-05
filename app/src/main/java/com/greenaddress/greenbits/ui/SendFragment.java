@@ -650,8 +650,6 @@ public class SendFragment extends SubaccountFragment {
         // Then add inputs until we cover amount + fee/change
         while (true) {
             fee = GATx.getTxFee(service, tx, feeRate);
-            if (fee.isLessThan(service.getMinFee()))
-                fee = service.getMinFee();
 
             final Coin minChange = changeOutput == null ? Coin.ZERO : service.getDustThreshold();
             final int cmp = sendAll ? 0 : total.compareTo(amount.add(fee).add(minChange));
