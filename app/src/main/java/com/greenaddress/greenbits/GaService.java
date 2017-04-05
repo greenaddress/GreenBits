@@ -57,6 +57,7 @@ import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.core.Utils;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.params.RegTestParams;
+import org.bitcoinj.params.TestNet3Params;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.utils.Fiat;
@@ -586,7 +587,14 @@ public class GaService extends Service implements INotificationHandler {
     private void updateBalance(final int subAccount, final Map<String, ?> data) {
         final String fiatCurrency = (String) data.get("fiat_currency");
         mCoinBalances.put(subAccount, Coin.valueOf(Long.valueOf((String) data.get("satoshi"))));
-        mFiatRate = Float.valueOf((String) data.get("fiat_exchange"));
+        try {
+            mFiatRate = Float.valueOf((String) data.get("fiat_exchange"));
+        } catch (final java.lang.NumberFormatException e) {
+            if (Network.NETWORK == TestNet3Params.get() || Network.NETWORK == RegTestParams.get())
+                mFiatRate = 0.0f; // Don't expect exchange rates from regtest
+            else
+                throw e;
+        }
         // Fiat.parseFiat uses toBigIntegerExact which requires at most 4 decimal digits,
         // while the server can return more, hence toBigInteger instead here:
         final BigInteger tmpValue = new BigDecimal((String) data.get("fiat_value"))
