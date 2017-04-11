@@ -590,10 +590,13 @@ public class GaService extends Service implements INotificationHandler {
         try {
             mFiatRate = Float.valueOf((String) data.get("fiat_exchange"));
         } catch (final java.lang.NumberFormatException e) {
-            if (Network.NETWORK == TestNet3Params.get() || Network.NETWORK == RegTestParams.get())
+            if (Network.NETWORK == TestNet3Params.get() || Network.NETWORK == RegTestParams.get()) {
                 mFiatRate = 0.0f; // Don't expect exchange rates from regtest
-            else
-                throw e;
+                mFiatBalances.put(subAccount, Fiat.valueOf(fiatCurrency, 0));
+                fireBalanceChanged(subAccount);
+                return;
+            }
+            throw e;
         }
         // Fiat.parseFiat uses toBigIntegerExact which requires at most 4 decimal digits,
         // while the server can return more, hence toBigInteger instead here:
