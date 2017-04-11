@@ -461,7 +461,6 @@ public class SendFragment extends SubaccountFragment {
         final GaService service = getGAService();
         final GaActivity gaActivity = getGaActivity();
 
-        // final Coin fee = Coin.parseCoin("0.0001"); //FIXME: pass real fee
         final Coin verifyAmount = mMaxButton.isChecked() ? null : amount;
         CB.after(service.validateTx(ptx, recipient, verifyAmount), new CB.Toast<Coin>(gaActivity, mSendButton) {
             @Override
