@@ -676,11 +676,6 @@ public class WalletClient {
         return password.getBytes();
     }
 
-
-    public Map<?, ?> getMyTransactions(final int subAccount) throws Exception {
-        return syncCall("txs.get_list_v2", Map.class, null, null, null, null, subAccount);
-    }
-
     public JSONMap getNewAddress(final int subAccount, final String addrType) {
         try {
             final JSONMap m = new JSONMap((Map<String, Object>) syncCall("vault.fund", Map.class, subAccount, true, addrType));
@@ -691,7 +686,7 @@ public class WalletClient {
         }
     }
 
-    public Map<?, ?> getMyTransactions(final String searchQuery, final int subAccount) throws Exception {
+    public Map<String, Object> getMyTransactions(final String searchQuery, final int subAccount) throws Exception {
         return syncCall("txs.get_list_v2", Map.class, null, searchQuery, null, null, subAccount);
     }
 
@@ -853,8 +848,16 @@ public class WalletClient {
         return mHDParent;
     }
 
-    public ListenableFuture<ArrayList> getAllUnspentOutputs(final int confs, final Integer subAccount) {
-        return simpleCall("txs.get_all_unspent_outputs", ArrayList.class, confs, subAccount, "any");
+    public ListenableFuture<List<JSONMap>> getAllUnspentOutputs(final int confs, final Integer subAccount) {
+         final ListenableFuture<ArrayList> rpc;
+         rpc = simpleCall("txs.get_all_unspent_outputs", ArrayList.class,
+                          confs, subAccount, "any");
+         return Futures.transform(rpc, new Function<ArrayList, List<JSONMap>>() {
+            @Override
+            public List<JSONMap> apply(final ArrayList utxos) {
+                return JSONMap.fromList(utxos);
+            }
+        });
     }
 
     private ListenableFuture<Transaction> transactionCall(final String procedure, final Object... args) {
