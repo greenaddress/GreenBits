@@ -54,6 +54,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import de.schildbach.wallet.ui.ScanActivity;
 
@@ -459,20 +461,20 @@ public class SendFragment extends SubaccountFragment {
         final GaService service = getGAService();
         final GaActivity gaActivity = getGaActivity();
 
-        final Map<String, Object> privateData = new HashMap<>();
+        final JSONMap privateData = new JSONMap();
         final String memo = UI.getText(mNoteText);
         if (!memo.isEmpty())
-            privateData.put("memo", memo);
+            privateData.mData.put("memo", memo);
 
         if (mIsExchanger)
-            privateData.put("memo", Exchanger.TAG_EXCHANGER_TX_MEMO);
+            privateData.mData.put("memo", Exchanger.TAG_EXCHANGER_TX_MEMO);
 
         if (mSubaccount != 0)
-            privateData.put("subaccount", mSubaccount);
+            privateData.mData.put("subaccount", mSubaccount);
 
         final boolean isInstant = mInstantConfirmationCheckbox.isChecked();
         if (isInstant)
-            privateData.put("instant", true);
+            privateData.mData.put("instant", true);
 
         final Coin amount = getSendAmount();
 
@@ -545,7 +547,7 @@ public class SendFragment extends SubaccountFragment {
 
     private void onTransactionPrepared(final PreparedTransaction ptx,
                                        final String recipient, final Coin amount,
-                                       final Map<String, Object> privateData) {
+                                       final JSONMap privateData) {
         final GaService service = getGAService();
         final GaActivity gaActivity = getGaActivity();
 
@@ -589,7 +591,7 @@ public class SendFragment extends SubaccountFragment {
                                         final Transaction signedRawTx,
                                         final String recipient, final Coin amount,
                                         final String method, final Coin fee,
-                                        final Map<String, Object> privateData,
+                                        final JSONMap privateData,
                                         final Map<String, Object> underLimits) {
         Log.i(TAG, "onTransactionValidated( params " + method + ' ' + fee + ' ' + amount + ' ' + recipient + ')');
         final GaService service = getGAService();
@@ -646,7 +648,8 @@ public class SendFragment extends SubaccountFragment {
                             twoFacData.put("code", UI.getText(newTx2FACodeText));
 
                         if (signedRawTx != null) {
-                            final ListenableFuture<Map<String,Object>> sendFuture = service.sendRawTransaction(signedRawTx, twoFacData, privateData, false);
+                            final ListenableFuture<Map<String,Object>> sendFuture;
+                            sendFuture = service.sendRawTransaction(signedRawTx, twoFacData, privateData, false);
                             Futures.addCallback(sendFuture, new CB.Toast<Map<String,Object>>(gaActivity, mSendButton) {
                                 @Override
                                 public void onSuccess(final Map result) {
@@ -716,21 +719,60 @@ public class SendFragment extends SubaccountFragment {
         });
     }
 
-    // FIXME: Duplicated in TransactionActivity.java
-    private static Coin getFeeEstimate(final GaService service, final String atBlock) {
-        // FIXME: Better estimate?
-        final Map<String, Object> feeEstimates = service.getFeeEstimates();
+    private static double extractRate(final Map feeEstimates, final Integer blockNum) {
+        final Map estimate = (Map) feeEstimates.get(Integer.toString(blockNum));
+        return Double.parseDouble(estimate.get("feerate").toString());
+    }
 
-        final double rate = Double.parseDouble(((Map) feeEstimates.get(atBlock)).get("feerate").toString());
-        if (rate > 0) {
+    // FIXME: Duplicated in TransactionActivity.java
+    // Return the best estimate of the fee rate in satoshi/1000 bytes
+    private static Coin getFeeEstimate(final GaService service, final boolean isInstant) {
+        final Map<String, Object> feeEstimates = service.getFeeEstimates();
+        Double bestInstant = null;
+
+        // Iterate the estimates from shortest to longest confirmation time
+        final SortedSet<Integer> keys = new TreeSet<>();
+        for (final String block : feeEstimates.keySet())
+            keys.add(Integer.parseInt(block));
+
+        for (final Integer blockNum : keys) {
+            if (!isInstant && blockNum < 6)
+                continue; // Non-instant: Use 6 confirmation rate and later only
+
+            double rate = extractRate(feeEstimates, blockNum);
+            if (rate <= 0.0)
+                continue; // No estimate available: Try next confirmation rate
+
+            if (isInstant) {
+                // For instant, increase the rate to ensure confirmation.
+                // We use the lowest value of:
+                // a) 1.1 * the 1st or 2nd block fee rate
+                // b) 2.0 * the first rate later than 2 blocks
+                if (blockNum <= 2) {
+                    if (bestInstant == null)
+                       bestInstant = rate * 1.1; // Save earliest fast confirmation rate
+                    continue; // Continue to find the first non-fast rate
+                } else
+                    rate *= 2.0;
+            }
+
+            if (bestInstant != null && bestInstant < rate)
+                rate = bestInstant; // Use the lowest instant rate found
+
             return Coin.valueOf((long) (rate * 1000 * 1000 * 100));
         }
-        // A negative rate means we don't have a good estimate. Default to
-        // 10000 satoshi per 1000 bytes to match the JS wallets.
-        // FIXME: This results in overpaying fees
+
+        if (bestInstant != null) {
+            // No non-fast confirmation rate, return the fast confirmation rate
+            return Coin.valueOf((long) (bestInstant * 1000 * 1000 * 100));
+        }
+
+        // We don't have a usable fee rate estimate, use a default.
         if (GaService.IS_ELEMENTS)
             return Coin.valueOf(1);
-        return Coin.valueOf(10000);
+        if (Network.NETWORK == MainNetParams.get())
+            return Coin.valueOf((isInstant ? 200 : 120) * 1000);
+        return Coin.valueOf((isInstant ? 75 : 60) * 1000);
     }
 
 
@@ -759,7 +801,7 @@ public class SendFragment extends SubaccountFragment {
     }
 
     private int createRawTransaction(final List<JSONMap> utxos, final String recipient,
-                                     final Coin amount, final Map<String, Object> privateData,
+                                     final Coin amount, final JSONMap privateData,
                                      final boolean sendAll) {
 
         if (GaService.IS_ELEMENTS)
@@ -768,7 +810,7 @@ public class SendFragment extends SubaccountFragment {
         final GaActivity gaActivity = getGaActivity();
         final GaService service = getGAService();
         final List<JSONMap> used = new ArrayList<>();
-        final Coin feeRate = getFeeEstimate(service, "1");
+        final Coin feeRate = getFeeEstimate(service, privateData.getBool("instant"));
 
         final Transaction tx = new Transaction(Network.NETWORK);
         tx.addOutput(amount, Address.fromBase58(Network.NETWORK, recipient));
@@ -892,14 +934,14 @@ public class SendFragment extends SubaccountFragment {
     }
 
     private int createRawElementsTransaction(final List<JSONMap> utxos, final String recipient,
-                                             final Coin amount, final Map<String, Object> privateData,
+                                             final Coin amount, final JSONMap privateData,
                                              final boolean sendAll) {
         // FIXME: sendAll
         final GaService service = getGAService();
         final GaActivity gaActivity = getGaActivity();
 
         final List<JSONMap> used = new ArrayList<>();
-        final Coin feeRate = getFeeEstimate(service, "1");
+        final Coin feeRate = getFeeEstimate(service, privateData.getBool("instant"));
 
         final ElementsTransaction tx = new ElementsTransaction(Network.NETWORK);
 
