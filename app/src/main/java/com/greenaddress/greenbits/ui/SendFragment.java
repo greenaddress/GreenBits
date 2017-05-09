@@ -826,14 +826,17 @@ public class SendFragment extends SubaccountFragment {
 
         // Then add inputs until we cover amount + fee/change
         while (true) {
-            fee = GATx.getTxFee(service, tx, feeRate);
+            fee = GATx.getTxFee(service, tx, feeRate, getContext());
 
             final Coin minChange = changeOutput == null ? Coin.ZERO : service.getDustThreshold();
             final int cmp = sendAll ? 0 : total.compareTo(amount.add(fee).add(minChange));
             if (cmp < 0) {
                 // Need more inputs to cover amount + fee/change
-                if (utxos.isEmpty())
+                Log.d(TAG, "cmp < 0 -> total:" + total + " amount:" + amount + " fee:" + fee + " minChange:" + minChange);
+                if (utxos.isEmpty()) {
+                    Log.d(TAG, "utxos.isEmpty()");
                     return R.string.insufficientFundsText; // None left, fail
+                }
 
                 total = total.add(addUtxo(tx, utxos, used));
                 continue;
@@ -862,8 +865,10 @@ public class SendFragment extends SubaccountFragment {
             actualAmount = amount;
         else {
             actualAmount = total.subtract(fee);
-            if (!actualAmount.isGreaterThan(Coin.ZERO))
+            if (!actualAmount.isGreaterThan(Coin.ZERO)) {
+                Log.d(TAG, "!actualAmount.isGreaterThan(Coin.ZERO)");
                 return R.string.insufficientFundsText;
+            }
             tx.getOutputs().get(0).setValue(actualAmount);
         }
 
@@ -968,7 +973,7 @@ public class SendFragment extends SubaccountFragment {
 
         // Then add inputs until we cover amount + fee/change
         while (true) {
-            fee = GATx.getTxFee(service, tx, feeRate);
+            fee = GATx.getTxFee(service, tx, feeRate, getContext());
 
             final Coin minChange = changeOutput == null ? Coin.ZERO : service.getDustThreshold();
             final int cmp = total.compareTo(amount.add(fee).add(minChange));

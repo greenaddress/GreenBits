@@ -1,6 +1,8 @@
 package com.greenaddress.greenapi;
 
+import android.content.Context;
 import android.util.Pair;
+import android.util.Log;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Bytes;
@@ -18,6 +20,7 @@ import org.bitcoinj.core.Utils;
 import org.bitcoinj.core.VarInt;
 import org.bitcoinj.script.ScriptBuilder;
 import com.blockstream.libwally.Wally;
+import com.greenaddress.greenbits.ui.R;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,6 +28,8 @@ import java.util.Comparator;
 import java.util.List;
 
 public class GATx {
+
+    private static final String TAG = GATx.class.getSimpleName();
 
     private static final List<byte[]> EMPTY_SIGS = ImmutableList.of(new byte[71], new byte[71]);
 
@@ -163,7 +168,7 @@ public class GATx {
     }
 
     // Calculate the fee that must be paid for a tx
-    public static Coin getTxFee(final GaService service, final Transaction tx, final Coin feeRate) {
+    public static Coin getTxFee(final GaService service, final Transaction tx, final Coin feeRate, Context context) {
         final Coin minRate = service.getMinFeeRate();
         final Coin rate = feeRate.isLessThan(minRate) ? minRate : feeRate;
         final int vSize;
@@ -180,7 +185,9 @@ public class GATx {
             vSize = (int) Math.ceil((nonSwSize * 3 + fullSize) / 4.0);
         }
         final double fee = (double) vSize * rate.value / 1000.0;
-        return Coin.valueOf((long) Math.ceil(fee));
+        final long min_fee_satoshi = context.getResources().getInteger(R.integer.min_fee_satoshi);
+        Log.d(TAG, "fee -> " + fee);
+        return Coin.valueOf(fee > min_fee_satoshi? (long) Math.ceil(fee) : min_fee_satoshi);
     }
 
     // Swap the change and recipient output in a tx with 50% probability */
