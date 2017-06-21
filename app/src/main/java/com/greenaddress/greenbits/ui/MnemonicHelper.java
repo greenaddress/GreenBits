@@ -5,10 +5,28 @@ import com.google.common.base.Charsets;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class MnemonicHelper {
+    public static final ArrayList<String> mWordsArray;
+    public static final Set<String> mWords;
 
+    static {
+        mWordsArray = new ArrayList<>(Wally.BIP39_WORDLIST_LEN);
+        mWords = new HashSet<>(Wally.BIP39_WORDLIST_LEN);
+        initWordList(mWordsArray, mWords);
+    }
+
+    public static void initWordList(final ArrayList<String> wordsArray, final Set<String> words) {
+        final Object en = Wally.bip39_get_wordlist("en");
+        for (int i = 0; i < Wally.BIP39_WORDLIST_LEN; ++i) {
+            wordsArray.add(Wally.bip39_get_word(en, i));
+            if (words != null)
+                words.add(wordsArray.get(i));
+        }
+    }
     private static int levenshteinDistance(final String sA, final String sB) {
         final int s1 = sA.length() + 1;
         final int s2 = sB.length() + 1;
@@ -28,16 +46,6 @@ public class MnemonicHelper {
         return c[s1 - 1];
     }
 
-    static boolean isInvalidWord(final ArrayList<String> words, final String word, final boolean equals) {
-        for (final String w : words) {
-            if ((!equals && w.startsWith(word)) ||
-                    (equals && w.equals(word))) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     public static byte[] decryptMnemonic(final byte[] entropy, final String normalizedPassphrase) {
         final byte[] salt = Arrays.copyOfRange(entropy, 32, 36);
         final byte[] encrypted = Arrays.copyOf(entropy, 32);
@@ -55,7 +63,7 @@ public class MnemonicHelper {
         return decrypted;
     }
 
-    static String getClosestWord(final ArrayList<String> words, final String word) {
+    public static String getClosestWord(final ArrayList<String> words, final String word) {
 
         final List<Integer> scores = new ArrayList<>(words.size());
         for (final String w : words) {
