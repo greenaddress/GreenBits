@@ -103,23 +103,20 @@ public class TwoFactorActivity extends GaActivity {
         setView(R.layout.activity_two_factor_3_provide_details);
 
         final boolean isEmail = mMethod.equals("email");
+        final TextView detailsText = UI.find(this, R.id.details);
+        detailsText.setInputType(isEmail ?  InputType.TYPE_CLASS_TEXT : InputType.TYPE_CLASS_PHONE);
+
         final int resId = isEmail ? R.string.emailAddress : R.string.phoneNumber;
         final String type = getString(resId);
 
         mPromptText.setText(getTypeString(UI.getText(mPromptText), type));
-        if (!isEmail)
+        if (!isEmail) {
             UI.hide(UI.find(this, R.id.emailNotices));
+            detailsText.setHint(R.string.twoFacPhoneHint);
+        }
 
         mProgressBar.setProgress(stepNum);
         mProgressBar.setMax(numSteps);
-
-        final TextView detailsText = UI.find(this, R.id.details);
-
-        detailsText.setInputType(
-                isEmail ?
-                        InputType.TYPE_CLASS_TEXT :
-                        InputType.TYPE_CLASS_PHONE
-        );
 
         mContinueButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -127,6 +124,10 @@ public class TwoFactorActivity extends GaActivity {
                 final String details = UI.getText(detailsText).trim();
                 if (details.isEmpty())
                     return;
+                if (!isEmail && !isValidPhoneNumber(details)) {
+                    toast(R.string.invalidPhoneNumber);
+                    return;
+                }
                 UI.disable(mContinueButton);
                 final Map<String, String> twoFacData = mService.make2FAData("proxy", proxyCode);
                 CB.after(mService.initEnableTwoFac(mMethod, details, twoFacData),
@@ -256,5 +257,14 @@ public class TwoFactorActivity extends GaActivity {
                 });
             }
         });
+    }
+
+    static boolean isValidPhoneNumber(final String phoneNumber) {
+        if (phoneNumber.startsWith("+") && phoneNumber.length() > 7 && phoneNumber.length() < 20) {
+            String stripped = phoneNumber.replaceAll("^\\+0", "").replaceAll("^\\+", "")
+                                         .replace(" ", "").replace("(", "").replace(")", "");
+            return !stripped.startsWith("00") && stripped.matches("\\d+?");
+        }
+        return false;
     }
 }

@@ -107,6 +107,7 @@
     <string name="invalidAmountAndAddress">Invalid amount and address</string>
     <string name="invalidAddress">Invalid address</string>
     <string name="invalidAmount">Invalid amount</string>
+    <string name="invalidPhoneNumber">Invalid phone number format</string>
     <string name="noBalanceFirstLine">Getting <a href="https://bitcoin.org/en/getting-started">started</a> with Bitcoin</string>
     <string name="noBalanceSecondLine">Where to <a href="http://howtobuybitcoins.info/">buy</a> them</string>
     <string name="noBalanceThirdLine">Read our <a href="https://greenaddress.it/faq">FAQ</a></string>
@@ -157,7 +158,8 @@
     <string name="twoFacProvideGauthDetailsDescription">You need to provide one code from your new Google Authenticator. You can obtain it by scanning the QR code below in the Google Authenticator app.</string>
     <string name="twoFacProvideGauthDetails">Please provide your Google Authenticator code.</string>
     <string name="twoFacProvideDetails">Please provide your %1$s.</string>
-    <string name="twoFacEmailChangeNotice">Providing an email enables notifications and transactions recovery</string>
+    <string name="twoFacPhoneHint">"+&lt;country code&gt;&lt;number&gt;"</string>
+    <string name="twoFacEmailChangeNotice">Providing an email enables notifications and transaction recovery.</string>
     <string name="twoFacEmailConfirmNotice">You will need to confirm your email in the next step, otherwise you won\'t receive any notifications.</string>
     <string name="twoFacProvideConfirmationCodeDescription">You need to provide the confirmation code to make sure you have access to the new two factor authentication method. After you providing the code, the method will be enabled.</string>
     <string name="twoFacProvideConfirmationCode">Please provide your %1$s code.</string>

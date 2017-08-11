@@ -19,7 +19,7 @@ You need to have the following Android developer tools installed:
 
 The above tools can be installed from the Android SDK manager.
 
-GreenBits uses [libwally](https://github.com/jgriffiths/libwally-core) which
+GreenBits uses [libwally](https://github.com/ElementsProject/libwally-core) which
 requires the following to be installed for building:
 
 - [SWIG](http://www.swig.org/). Most Linux distributions have this packaged,
@@ -39,6 +39,11 @@ This step requires the environment variables `ANDROID_NDK` and `JAVA_HOME` to
 be set correctly.
 
 `cd app && ./prepare_fdroid.sh && cd ..`
+
+Alternately, if you don't wish to install the wally build dependencies,
+you can simply use the released pre-built libraries:
+
+`cd app && ./fetch_libwally_binaries.sh && cd ..`
 
 #### Build the Android app
 
