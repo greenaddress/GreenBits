@@ -520,6 +520,7 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
                     public void onSuccess(final Map<String, Object> result) {
                         final List txList = (List) result.get("list");
                         final int currentBlock = ((Integer) result.get("cur_block"));
+                        boolean matched = false;
                         for (final Object tx : txList) {
                             try {
                                 final JSONMap txJSON = (JSONMap) tx;
@@ -527,9 +528,8 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
 
                                 if (replacedList == null) {
                                     final TransactionItem txItem = new TransactionItem(service, txJSON, currentBlock);
-                                    final boolean matches;
                                     if (!GaService.IS_ELEMENTS) {
-                                        matches = txItem.receivedOn != null && txItem.receivedOn.equals(mCurrentAddress);
+                                        matched = txItem.receivedOn != null && txItem.receivedOn.equals(mCurrentAddress);
                                     } else {
                                         final int subaccount = txItem.receivedOnEp.getInt("subaccount", 0);
                                         final int pointer = txItem.receivedOnEp.getInt("pubkey_pointer");
@@ -539,9 +539,9 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
                                             service.getBlindingPubKey(subaccount, pointer)
                                         ).toString();
                                         final String currentBtcAddress = mCurrentAddress.replace("bitcoin:", "").split("\\?")[0];
-                                        matches = receivedOn.equals(currentBtcAddress);
+                                        matched = receivedOn.equals(currentBtcAddress);
                                     }
-                                    if (matches) {
+                                    if (matched) {
                                         final GaActivity gaActivity = getGaActivity();
                                         if (mIsExchanger) {
                                             mExchanger.buyBtc(mExchanger.getAmountWithCommission());
@@ -555,12 +555,15 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
                                                 }
                                             });
                                         }
+                                        break;
                                     }
                                 }
                             } catch (final ParseException e) {
                                 e.printStackTrace();
                             }
                         }
+                        if (!matched)
+                            getGaActivity().toast(R.string.new_incoming_transaction);
                     }
 
                     @Override
