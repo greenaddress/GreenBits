@@ -58,6 +58,9 @@ import org.bitcoinj.core.Transaction;
 import org.bitcoinj.core.TransactionOutput;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.params.RegTestParams;
+import org.bitcoinj.protocols.payments.PaymentProtocol;
+import org.bitcoinj.protocols.payments.PaymentProtocolException;
+import org.bitcoinj.protocols.payments.PaymentSession;
 import org.bitcoinj.script.Script;
 import org.bitcoinj.script.ScriptBuilder;
 import org.bitcoinj.utils.ExchangeRate;
@@ -87,6 +90,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import javax.annotation.Nullable;
 
 public class GaService extends Service implements INotificationHandler {
     private static final String TAG = GaService.class.getSimpleName();
@@ -794,24 +799,24 @@ public class GaService extends Service implements INotificationHandler {
         return mSPV.validateTx(ptx, recipientStr, amount);
     }
 
-    public ListenableFuture<Void>
+    public ListenableFuture<String>
     signAndSendTransaction(final PreparedTransaction ptx, final Object twoFacData) {
         return Futures.transform(signTransaction(ptx),
-                                 new AsyncFunction<List<byte[]>, Void>() {
+                                 new AsyncFunction<List<byte[]>, String>() {
             @Override
-            public ListenableFuture<Void> apply(final List<byte[]> sigs) throws Exception {
+            public ListenableFuture<String> apply(final List<byte[]> sigs) throws Exception {
                 return sendTransaction(sigs, twoFacData);
             }
         }, mExecutor);
     }
 
-    public ListenableFuture<Void>
+    public ListenableFuture<String>
     sendTransaction(final List<byte[]> sigs, final Object twoFacData) {
         // FIXME: The server should return the full limits including is_fiat from send_tx
         return Futures.transform(mClient.sendTransaction(sigs, twoFacData),
-                                 new Function<String, Void>() {
+                                 new Function<String, String>() {
                    @Override
-                   public Void apply(final String txHash) {
+                   public String apply(final String txHash) {
                        try {
                            mLimitsData = mClient.getSpendingLimits();
                        } catch (final Exception e) {
@@ -819,22 +824,22 @@ public class GaService extends Service implements INotificationHandler {
                            mLimitsData.mData.put("total", 0);
                            e.printStackTrace();
                        }
-                       return null;
+                       return txHash;
                    }
         }, mExecutor);
     }
 
-    public ListenableFuture<Void>
+    public ListenableFuture<String>
     sendRawTransaction(final Transaction tx, final Map<String, Object> twoFacData,
                        final JSONMap privateData) {
         return Futures.transform(mClient.sendRawTransaction(tx, twoFacData, privateData),
-                                 new Function<Map<String, Object>, Void>() {
+                                 new Function<Map<String, Object>, String>() {
                    @Override
-                   public Void apply(final Map<String, Object> ret) {
+                   public String apply(final Map<String, Object> ret) {
                        // FIXME: Server should return the full limits including is_fiat
                        if (ret.get("new_limit") != null)
                            mLimitsData.mData.put("total", ret.get("new_limit"));
-                       return null;
+                       return ret.get("txhash").toString();
                    }
         }, mExecutor);
     }
@@ -982,6 +987,28 @@ public class GaService extends Service implements INotificationHandler {
     public ListenableFuture<QrBitmap> getNewAddressBitmap(final int subAccount,
                                                           final Callable<Void> waitFn,
                                                           final Long amount) {
+        final Function<String, QrBitmap> generateQrBitmap = new Function<String, QrBitmap>() {
+            @Override
+            public QrBitmap apply(final String address) {
+                final String uri;
+                if (amount != null)
+                    uri = "bitcoin:" + address + "?amount=" + Coin.valueOf(amount).toPlainString();
+                else
+                    uri = address;
+                return new QrBitmap(uri, 0 /* transparent background */);
+            }
+        };
+        return Futures.transform(getNewAddress(subAccount, waitFn), generateQrBitmap, mExecutor);
+    }
+
+    /**
+     * Generate new address to the selected sub account, bitcoin or elements
+     * @param subAccount sub account ID
+     * @param waitFn eventually callback to execute (e.g. waiting popup)
+     * @return the address in string format
+     */
+    public ListenableFuture<String> getNewAddress(final int subAccount,
+                                                  @Nullable final Callable<Void> waitFn) {
         // Fetch any cached address
         final JSONMap cachedAddress = getCachedAddress(subAccount);
 
@@ -991,7 +1018,8 @@ public class GaService extends Service implements INotificationHandler {
             addrFn = Futures.immediateFuture(cachedAddress);
         else {
             try {
-                waitFn.call();
+                if (waitFn != null)
+                    waitFn.call();
             } catch (final Exception e) {
             }
             addrFn = getNewAddressAsync(subAccount, false);
@@ -1002,9 +1030,9 @@ public class GaService extends Service implements INotificationHandler {
             getNewAddressAsync(subAccount, true);
 
         // Convert the address into a bitmap and return it
-        final AsyncFunction<JSONMap, QrBitmap> verifyAddress = new AsyncFunction<JSONMap, QrBitmap>() {
+        final AsyncFunction<JSONMap, String> verifyAddress = new AsyncFunction<JSONMap, String>() {
             @Override
-            public ListenableFuture<QrBitmap> apply(final JSONMap input) throws Exception {
+            public ListenableFuture<String> apply(final JSONMap input) throws Exception {
                 if (input == null)
                     throw new IllegalArgumentException("Failed to generate a new address");
 
@@ -1029,9 +1057,9 @@ public class GaService extends Service implements INotificationHandler {
                 }
 
                 return Futures.transform(verify,
-                        new Function<Boolean, QrBitmap>() {
+                        new Function<Boolean, String>() {
                     @Override
-                    public QrBitmap apply(final Boolean isValid) {
+                    public String apply(final Boolean isValid) {
                         if (!isValid)
                             throw new IllegalArgumentException("Address validation failed");
 
@@ -1041,14 +1069,7 @@ public class GaService extends Service implements INotificationHandler {
                             address = ConfidentialAddress.fromP2SHHash(Network.NETWORK, scriptHash, pubKey).toString();
                         } else
                             address = Address.fromP2SHHash(Network.NETWORK, scriptHash).toString();
-
-                        final String uri;
-                        if (amount != null)
-                            uri = "bitcoin:" + address + "?amount=" + Coin.valueOf(amount).toPlainString();
-                        else
-                            uri = address;
-
-                        return new QrBitmap(uri, 0 /* transparent background */);
+                        return address;
                     }
                 });
             }
@@ -1245,6 +1266,28 @@ public class GaService extends Service implements INotificationHandler {
 
     public ListenableFuture<Map<?, ?>> processBip70URL(final String url) {
         return mClient.processBip70URL(url);
+    }
+
+    public ListenableFuture<PaymentSession>
+    fetchPaymentRequest(final String url) {
+        return Futures.transform(mClient.fetchPaymentRequest(url),
+                new Function<PaymentSession, PaymentSession>() {
+                    @Override
+                    public PaymentSession apply(final PaymentSession ret) {
+                        return ret;
+                    }
+                }, mExecutor);
+    }
+
+    public ListenableFuture<PaymentProtocol.Ack>
+    sendPayment(final PaymentSession paymentSession, final List<Transaction> txns, final Address refundAddr, final String memo) throws PaymentProtocolException.InvalidNetwork, PaymentProtocolException.InvalidPaymentURL, PaymentProtocolException.Expired, IOException {
+        return Futures.transform(mClient.sendPayment(paymentSession, txns, refundAddr, memo),
+                new Function<PaymentProtocol.Ack, PaymentProtocol.Ack>() {
+                    @Override
+                    public PaymentProtocol.Ack apply(final PaymentProtocol.Ack ret) {
+                        return ret;
+                    }
+                }, mExecutor);
     }
 
     public ListenableFuture<PreparedTransaction> preparePayreq(final Coin amount, final Map<?, ?> data, final JSONMap privateData) {
