@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
@@ -28,6 +29,7 @@ public class CircularButton extends CardView {
     private Button mButton;
     private TransitionDrawable mTransStartLoading;
     private TransitionDrawable mTransStopLoading;
+    private int mBackgroundColor;
 
     public CircularButton(Context context) {
         super(context);
@@ -58,6 +60,8 @@ public class CircularButton extends CardView {
         mButton = new Button(context);
         mButton.setBackgroundColor(Color.TRANSPARENT);
         mButton.setClickable(false);
+        mButton.setPadding((int)getPx(15), mButton.getPaddingTop(), (int)getPx(15),
+                mButton.getPaddingBottom());
         final String text = typedArray.getString(R.styleable.CircularButton_text);
         mButton.setText(text);
         mButton.setTextColor(typedArray.getColor(R.styleable.CircularButton_textColor, Color.BLACK));
@@ -78,14 +82,22 @@ public class CircularButton extends CardView {
         });
 
         // set background color animations
-        int backgroundColor = typedArray.getColor(R.styleable.CardView_cardBackgroundColor,
+        mBackgroundColor = typedArray.getColor(R.styleable.CardView_cardBackgroundColor,
                 Color.WHITE);
-        final ColorDrawable[] color1 = {new ColorDrawable(backgroundColor),
+        mLinearLayout.setBackgroundColor(mBackgroundColor);
+        final ColorDrawable[] color1 = {new ColorDrawable(mBackgroundColor),
                 new ColorDrawable(Color.WHITE)};
         mTransStartLoading = new TransitionDrawable(color1);
         final ColorDrawable[] color2 = {new ColorDrawable(Color.WHITE), new
-                ColorDrawable(backgroundColor)};
+                ColorDrawable(mBackgroundColor)};
         mTransStopLoading = new TransitionDrawable(color2);
+
+        // set progressbar for API < lollipop
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            mProgressBar.setBackgroundColor(Color.WHITE);
+            mProgressBar.getIndeterminateDrawable().setColorFilter(
+                    mBackgroundColor, PorterDuff.Mode.SRC_IN);
+        }
 
         mLinearLayout.addView(mButton);
         mLinearLayout.addView(mProgressBar);
@@ -105,9 +117,15 @@ public class CircularButton extends CardView {
         setClickable(false);
         mButton.setVisibility(View.GONE);
         mProgressBar.setVisibility(View.VISIBLE);
-        setRadius(getPx(23));
-        mLinearLayout.setBackground(mTransStartLoading);
-        mTransStartLoading.startTransition(DEFAULT_DURATION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            setRadius(getPx(23));
+            mLinearLayout.setBackground(mTransStartLoading);
+            mTransStartLoading.startTransition(DEFAULT_DURATION);
+        } else {
+            setCardBackgroundColor(Color.WHITE);
+            mLinearLayout.setBackgroundColor(Color.WHITE);
+            setRadius(getPx(30));
+        }
     }
 
     public void stopLoading() {
@@ -115,8 +133,13 @@ public class CircularButton extends CardView {
         mProgressBar.setVisibility(View.GONE);
         setRadius(getPx(DEFAULT_RADIUS));
         setClickable(true);
-        mLinearLayout.setBackground(mTransStopLoading);
-        mTransStopLoading.startTransition(DEFAULT_DURATION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            mLinearLayout.setBackground(mTransStopLoading);
+            mTransStopLoading.startTransition(DEFAULT_DURATION);
+        } else {
+            setCardBackgroundColor(mBackgroundColor);
+            mLinearLayout.setBackgroundColor(mBackgroundColor);
+        }
     }
 
     public void setComplete(final Boolean complete) {
