@@ -20,39 +20,39 @@
 
         <Button
             android:id="@+id/trezorPinButton1"
-            android:text="\?" />
+            android:text="@string/questionMark" />
 
         <Button
             android:id="@+id/trezorPinButton2"
-            android:text="\?" />
+            android:text="@string/questionMark" />
 
         <Button
             android:id="@+id/trezorPinButton3"
-            android:text="\?" />
+            android:text="@string/questionMark" />
 
         <Button
             android:id="@+id/trezorPinButton4"
-            android:text="\?" />
+            android:text="@string/questionMark" />
 
         <Button
             android:id="@+id/trezorPinButton5"
-            android:text="\?" />
+            android:text="@string/questionMark" />
 
         <Button
             android:id="@+id/trezorPinButton6"
-            android:text="\?" />
+            android:text="@string/questionMark" />
 
         <Button
             android:id="@+id/trezorPinButton7"
-            android:text="\?" />
+            android:text="@string/questionMark" />
 
         <Button
             android:id="@+id/trezorPinButton8"
-            android:text="\?" />
+            android:text="@string/questionMark" />
 
         <Button
             android:id="@+id/trezorPinButton9"
-            android:text="\?" />
+            android:text="@string/questionMark" />
 
     </GridLayout>
 
