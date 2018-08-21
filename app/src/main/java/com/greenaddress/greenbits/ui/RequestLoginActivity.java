@@ -157,7 +157,7 @@ public class RequestLoginActivity extends LoginActivity implements OnDiscoveredT
                             buttons[i].setOnClickListener(new View.OnClickListener() {
                                 @Override
                                 public void onClick(final View v) {
-                                    pinValue.setText(UI.getText(pinValue) + (ii + 1));
+                                    pinValue.setText(String.format("%s%d", UI.getText(pinValue), (ii + 1)));
                                     pinValue.setSelection(UI.getText(pinValue).length());
                                 }
                             });
