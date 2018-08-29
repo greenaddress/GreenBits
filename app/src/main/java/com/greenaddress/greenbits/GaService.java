@@ -161,6 +161,7 @@ public class GaService extends Service implements INotificationHandler {
     private final SparseArray<GaObservable> mBalanceObservables = new SparseArray<>();
     private final GaObservable mNewTxObservable = new GaObservable();
     private final GaObservable mVerifiedTxObservable = new GaObservable();
+    private final GaObservable mNewBlockObservable = new GaObservable();
     private String mSignUpMnemonic;
     private Bitmap mSignUpQRCode;
     private int mCurrentBlock; // FIXME: Pass current block height back in login data.
@@ -561,7 +562,7 @@ public class GaService extends Service implements INotificationHandler {
         Log.i(TAG, "onNewBlock");
         setCurrentBlock(blockHeight);
         mSPV.onNewBlock(blockHeight);
-        mNewTxObservable.doNotify();
+        mNewBlockObservable.doNotify();
     }
 
     @Override
@@ -1354,6 +1355,14 @@ public class GaService extends Service implements INotificationHandler {
 
     public void deleteVerifiedTxObserver(final Observer o) {
         mVerifiedTxObservable.deleteObserver(o);
+    }
+
+    public void addNewBlockObserver(final Observer o) {
+        mNewBlockObservable.addObserver(o);
+    }
+
+    public void deleteNewBlockObserver(final Observer o) {
+        mNewBlockObservable.deleteObserver(o);
     }
 
     public void addTwoFactorObserver(final Observer o) {

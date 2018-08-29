@@ -75,6 +75,7 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
     private boolean mIsExchanger;
     private Button mShowQrCode;
     private Observer mNewTxObserver;
+    private Observer mNewBlockObserver;
 
     @Override
     public void onResume() {
@@ -517,8 +518,12 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
     @Override
     public void attachObservers() {
         if (mNewTxObserver == null) {
-            mNewTxObserver = makeUiObserver(new Runnable() { public void run() { onNewTx(); } });
+            mNewTxObserver = makeUiObserver(new Runnable() { public void run() { onNewTxBlock(false); } });
             getGAService().addNewTxObserver(mNewTxObserver);
+        }
+        if (mNewBlockObserver == null) {
+            mNewBlockObserver = makeUiObserver(new Runnable() { public void run() { onNewTxBlock(true); } });
+            getGAService().addNewBlockObserver(mNewBlockObserver);
         }
         super.attachObservers();
     }
@@ -530,9 +535,13 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
             getGAService().deleteNewTxObserver(mNewTxObserver);
             mNewTxObserver = null;
         }
+        if (mNewBlockObserver!= null) {
+            getGAService().deleteNewBlockObserver(mNewBlockObserver);
+            mNewBlockObserver = null;
+        }
     }
 
-    private void onNewTx() {
+    private void onNewTxBlock(final boolean isBlock) {
         if (mCurrentAddress.isEmpty() || !isPageSelected())
             return;
 
@@ -585,7 +594,7 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
                                 e.printStackTrace();
                             }
                         }
-                        if (!matched)
+                        if (!isBlock && !matched)
                             getGaActivity().toast(R.string.new_incoming_transaction);
                     }
 
