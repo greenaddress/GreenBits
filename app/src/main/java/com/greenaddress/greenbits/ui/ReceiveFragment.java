@@ -179,6 +179,10 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
         });
         UI.showIf(getGAService().cfg().getBoolean("showAmountInReceive", false) || mIsExchanger, amountFields);
 
+        mCurrentAddress = "";
+        if (savedInstanceState != null)
+            mCurrentAddress = savedInstanceState.getString("mCurrentAddress", "");
+
         if (mIsExchanger) {
             setPageSelected(true);
             mAmountFiatWithCommission = UI.find(mView, R.id.amountFiatWithCommission);
@@ -221,6 +225,11 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
                     });
                 }
             });
+        } else if (!mCurrentAddress.isEmpty()) {
+            // Preserve current address after flipping orientation
+            super.setPageSelected(true);
+            final int TRANSPARENT = 0; // Transparent background
+            onNewAddressGenerated(new QrBitmap(mCurrentAddress, TRANSPARENT));
         }
 
         registerReceiver();
@@ -510,6 +519,7 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
         if (mAmountFields != null)
             outState.putBoolean("pausing", mAmountFields.isPausing());
         outState.putBoolean("isExchanger", mIsExchanger);
+        outState.putString("mCurrentAddress", mCurrentAddress);
     }
 
     public void setIsExchanger(final boolean isExchanger) {
