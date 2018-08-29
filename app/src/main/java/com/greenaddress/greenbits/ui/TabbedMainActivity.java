@@ -34,6 +34,7 @@ import com.afollestad.materialdialogs.MaterialDialog;
 import com.blockstream.libwally.Wally;
 import com.google.common.util.concurrent.FutureCallback;
 import com.greenaddress.greenbits.GaService;
+import com.greenaddress.greenbits.GreenAddressApplication;
 import com.greenaddress.greenbits.ui.monitor.NetworkMonitorActivity;
 import com.greenaddress.greenbits.ui.preferences.SettingsActivity;
 import com.greenaddress.greenbits.ui.preferences.TwoFactorPreferenceFragment;
@@ -72,7 +73,6 @@ public class TabbedMainActivity extends GaActivity implements Observer, View.OnC
             REQUEST_TX_DETAILS = 4,
             REQUEST_SEND_QR_SCAN_EXCHANGER = 5;
     private ViewPager mViewPager;
-    private Menu mMenu;
     private Boolean mInternalQr = false;
     private String mSendAmount;
     private Dialog mTwoFactorDialog;
@@ -367,8 +367,7 @@ public class TabbedMainActivity extends GaActivity implements Observer, View.OnC
             return;
         }
 
-        setMenuItemVisible(mMenu, R.id.action_share,
-                           adapter != null && adapter.mSelectedPage == 0);
+        invalidateOptionsMenu();
      }
 
     @Override
@@ -557,7 +556,15 @@ public class TabbedMainActivity extends GaActivity implements Observer, View.OnC
             setMenuItemVisible(menu, R.id.action_exchanger, isExchanger);
         }
 
-        mMenu = menu;
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(final Menu menu) {
+        super.onPrepareOptionsMenu(menu);
+        final SectionsPagerAdapter adapter = getPagerAdapter();
+        setMenuItemVisible(menu, R.id.network_unavailable, !mService.isLoggedIn());
+        setMenuItemVisible(menu, R.id.action_share, adapter != null && adapter.mSelectedPage == 0);
         return true;
     }
 
@@ -623,7 +630,7 @@ public class TabbedMainActivity extends GaActivity implements Observer, View.OnC
             // FIXME: Should pass flag to activity so it shows it was forced logged out
             startActivity(new Intent(this, FirstScreenActivity.class));
         }
-        setMenuItemVisible(mMenu, R.id.network_unavailable, !state.isLoggedIn());
+        invalidateOptionsMenu();
     }
 
     @Override
@@ -799,7 +806,7 @@ public class TabbedMainActivity extends GaActivity implements Observer, View.OnC
             if (mFragments[mSelectedPage] != null)
                 mFragments[mSelectedPage].setPageSelected(true);
 
-            setMenuItemVisible(mMenu, R.id.action_share, mSelectedPage == 0);
+            invalidateOptionsMenu();
         }
 
         public void setBlockWaitDialog(final boolean doBlock) {
