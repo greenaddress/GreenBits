@@ -474,7 +474,8 @@ public class ReceiveFragment extends SubaccountFragment implements OnDiscoveredT
 
     @Override
     public void onShareClicked() {
-        if (mQrCodeBitmap == null || mQrCodeBitmap.getData().isEmpty())
+        if (mQrCodeBitmap == null || mQrCodeBitmap.getData().isEmpty() ||
+                mCurrentAddress.isEmpty() || !mQrCodeBitmap.getData().equals(mCurrentAddress))
             return;
 
         final Intent intent = new Intent();
