@@ -338,7 +338,7 @@ public class TwoFactorPreferenceFragment extends GAPreferenceFragment
             return;
         }
 
-        UI.popupTwoFactorChoice(getActivity(), mService, skipChoice, new CB.Runnable1T<String>() {
+        final MaterialDialog mTwoFactor = UI.popupTwoFactorChoice(getActivity(), mService, skipChoice, new CB.Runnable1T<String>() {
             public void run(final String method) {
                 final View v = inflatePinDialog(method);
                 final EditText codeText = UI.find(v, R.id.btchipPINValue);
@@ -358,6 +358,8 @@ public class TwoFactorPreferenceFragment extends GAPreferenceFragment
                   }).build().show();
             }
         });
+        if (mTwoFactor != null)
+            mTwoFactor.show();
     }
 
     private void setSpendingLimits(final JSONMap limitsData,
