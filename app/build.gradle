@@ -10,9 +10,6 @@ android {
         exclude 'META-INF/io.netty.versions.properties'
         exclude 'META-INF/rxjava.properties'
         exclude 'lib/x86_64/darwin/libscrypt.dylib'
-        exclude 'jackson-core-asl-1.8.6.jar:META-INF/ASL2.0'
-        exclude 'jackson-core-asl-1.8.6.jar:META-INF/LICENSE'
-        exclude 'jackson-core-asl-1.8.6.jar:META-INF/NOTICE'
         exclude 'org/bitcoinj/crypto/mnemonic/wordlist/english.txt'
         exclude 'org/bitcoinj/crypto/cacerts'
         exclude 'org.bitcoin.production.checkpoints.txt'
@@ -118,7 +115,7 @@ dependencies {
     api project(':bitcoinj:core'), project(':jawampa'),
             project(':jawampa:jawampa-core'), project(':jawampa:jawampa-netty'),
             files('libwally-core/src/swig_java/wallycore.jar')
-    api 'com.fasterxml.jackson:jackson-datatype-json-org:1.8.0'
+    api 'com.fasterxml.jackson.datatype:jackson-datatype-json-org:2.9.6'
     api 'com.android.support:support-v4:27.1.1'
     // force material-dialogs to use latest support libs
     api 'com.android.support:support-v13:27.1.1'

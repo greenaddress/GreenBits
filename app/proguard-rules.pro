@@ -18,7 +18,6 @@
 
 -mergeinterfacesaggressively
 
--keep class org.codehaus.jackson.** { *; }
 -keep public class android.support.v7.widget.** { *; }
 -keep public class android.support.v7.internal.widget.** { *; }
 -keep public class android.support.v7.internal.view.menu.** { *; }
@@ -32,12 +31,10 @@
 -keepattributes InnerClasses,EnclosingMethod
 # END for protobuf in trezor
 
--dontwarn org.codehaus.jackson.**
 -dontwarn com.google.common.**
 -dontwarn com.google.errorprone.annotations.**
 -dontwarn com.google.j2objc.annotations.**
 -dontwarn java.lang.ClassValue
--dontwarn org.codehaus.mojo.animal_sniffer.IgnoreJRERequirement
 -dontwarn afu.org.checkerframework.**
 -dontwarn org.checkerframework.**
 -dontwarn org.slf4j.**
@@ -74,3 +71,15 @@
 -keep class com.blockstream.libwally.** {*;}
 
 -keepattributes InnerClasses,EnclosingMethod
+
+
+# Proguard configuration for Jackson 2.x (fasterxml package instead of codehaus package)
+-keep class com.fasterxml.jackson.databind.ObjectMapper {
+    public <methods>;
+    protected <methods>;
+}
+-keep class com.fasterxml.jackson.databind.ObjectWriter {
+    public ** writeValueAsString(**);
+}
+-keepnames class com.fasterxml.jackson.** { *; }
+-dontwarn com.fasterxml.jackson.databind.**

@@ -1,10 +1,10 @@
 package com.greenaddress.greenapi;
 
 import com.blockstream.libwally.Wally;
+import com.fasterxml.jackson.databind.MappingJsonFactory;
 
 import org.bitcoinj.core.Coin;
 import org.bitcoinj.core.Sha256Hash;
-import org.codehaus.jackson.map.MappingJsonFactory;
 
 import java.io.Serializable;
 import java.io.IOException;

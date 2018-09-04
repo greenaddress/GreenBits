@@ -1,8 +1,8 @@
 package com.greenaddress.greenapi;
 
 import com.blockstream.libwally.Wally;
+import com.fasterxml.jackson.databind.MappingJsonFactory;
 import com.greenaddress.greenbits.ui.MnemonicHelper;
-import org.codehaus.jackson.map.MappingJsonFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
