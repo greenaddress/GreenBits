@@ -284,6 +284,12 @@ public class WalletClient {
 
     private void clientSubscribe(final String s, final Class mapClass, final EventHandler eventHandler) {
         final String topic = "com.greenaddress." + s;
+
+        if (mConnection == null) {
+            Log.i(TAG, "not connected");
+            return;
+        }
+
         mConnection.makeSubscription(topic)
                    .observeOn(mScheduler)
                    .subscribe(new Action1<PubSubData>() {
