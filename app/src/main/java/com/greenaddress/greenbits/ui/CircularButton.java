@@ -179,4 +179,16 @@ public class CircularButton extends CardView {
     public boolean isLoading() {
         return !isClickable();
     }
+
+    public void setText(final String text) {
+        if (mButton == null)
+            return;
+        mButton.setText(text);
+    }
+
+    public void setText(final int resId) {
+        if (mButton == null)
+            return;
+        mButton.setText(resId);
+    }
 }
