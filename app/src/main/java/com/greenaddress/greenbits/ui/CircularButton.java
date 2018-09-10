@@ -9,6 +9,7 @@ import android.graphics.PorterDuff;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
+import android.os.Handler;
 import android.support.v7.widget.CardView;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -32,6 +33,7 @@ public class CircularButton extends CardView {
     private TransitionDrawable mTransStopLoading;
     private int mBackgroundColor;
     private int mLayoutWidth;
+    private int mSelectableItemBackground;
 
     public CircularButton(Context context) {
         super(context);
@@ -56,7 +58,8 @@ public class CircularButton extends CardView {
         final TypedValue typedValue = new TypedValue();
         getContext().getTheme().resolveAttribute(android.R.attr.selectableItemBackground,
                 typedValue, true);
-        mLinearLayout.setBackgroundResource(typedValue.resourceId);
+        mSelectableItemBackground = typedValue.resourceId;
+        mLinearLayout.setBackgroundResource(mSelectableItemBackground);
 
         // create button
         mButton = new Button(context);
@@ -86,11 +89,10 @@ public class CircularButton extends CardView {
         // set background color animations
         mBackgroundColor = typedArray.getColorStateList(R.styleable.CardView_cardBackgroundColor)
                 .getDefaultColor();
-        mLinearLayout.setBackgroundColor(mBackgroundColor);
         final ColorDrawable[] color1 = {new ColorDrawable(mBackgroundColor),
                 new ColorDrawable(Color.WHITE)};
         mTransStartLoading = new TransitionDrawable(color1);
-        final ColorDrawable[] color2 = {new ColorDrawable(Color.WHITE), new
+        final ColorDrawable[] color2 = {new ColorDrawable(mSelectableItemBackground), new
                 ColorDrawable(mBackgroundColor)};
         mTransStopLoading = new TransitionDrawable(color2);
 
@@ -134,7 +136,7 @@ public class CircularButton extends CardView {
         mProgressBar.setVisibility(View.VISIBLE);
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             setCardBackgroundColor(Color.WHITE);
-            mLinearLayout.setBackgroundColor(Color.WHITE);
+            mLinearLayout.setBackgroundColor(mSelectableItemBackground);
             setRadius(getPx(30));
             return;
         }
@@ -142,6 +144,10 @@ public class CircularButton extends CardView {
 
         mLinearLayout.setBackground(mTransStartLoading);
         mTransStartLoading.startTransition(DEFAULT_DURATION);
+
+        // workaround to set the correct background on the end of animation
+        new Handler().postDelayed(() ->
+                mLinearLayout.getBackground().setColorFilter(Color.WHITE, PorterDuff.Mode.MULTIPLY), DEFAULT_DURATION);
     }
 
     public void stopLoading() {
@@ -161,6 +167,10 @@ public class CircularButton extends CardView {
         }
         mLinearLayout.setBackground(mTransStopLoading);
         mTransStopLoading.startTransition(DEFAULT_DURATION);
+
+        // workaround to set the correct background on the end of animation
+        new Handler().postDelayed(() ->
+                mLinearLayout.setBackgroundResource(mSelectableItemBackground), DEFAULT_DURATION);
     }
 
     public void setComplete(final Boolean complete) {
