@@ -58,12 +58,14 @@ android {
             minifyEnabled true
             shrinkResources true
             matchingFallbacks = ['normal']
+            resValue "mipmap", "ic_launcher", "@mipmap/ic_launcher_release"
         }
         debug {
             multiDexEnabled true
             matchingFallbacks = ['normal']
             applicationIdSuffix ".debug"
             versionNameSuffix "-debug"
+            resValue "mipmap", "ic_launcher", "@mipmap/ic_launcher_debug"
         }
     }
     splits {
