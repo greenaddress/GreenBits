@@ -13,6 +13,7 @@ import android.support.v7.widget.CardView;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -30,6 +31,7 @@ public class CircularButton extends CardView {
     private TransitionDrawable mTransStartLoading;
     private TransitionDrawable mTransStopLoading;
     private int mBackgroundColor;
+    private int mLayoutWidth;
 
     public CircularButton(Context context) {
         super(context);
@@ -100,6 +102,13 @@ public class CircularButton extends CardView {
         }
 
         typedArray.recycle();
+
+        // get the width set
+        final int[] width = new int[] { android.R.attr.layout_width };
+        final TypedArray typedArray1 = context.obtainStyledAttributes(attrs, width);
+        mLayoutWidth = typedArray1.getLayoutDimension(0, ViewGroup.LayoutParams.WRAP_CONTENT);
+        typedArray1.recycle();
+
         mLinearLayout.addView(mButton);
         mLinearLayout.addView(mProgressBar);
         addView(mLinearLayout);
@@ -115,6 +124,11 @@ public class CircularButton extends CardView {
     }
 
     public void startLoading() {
+        // set width to wrap
+        final ViewGroup.LayoutParams layoutParams = getLayoutParams();
+        layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+        requestLayout();
+
         setClickable(false);
         mButton.setVisibility(View.GONE);
         mProgressBar.setVisibility(View.VISIBLE);
@@ -125,11 +139,17 @@ public class CircularButton extends CardView {
             return;
         }
         setRadius(getPx(23));
+
         mLinearLayout.setBackground(mTransStartLoading);
         mTransStartLoading.startTransition(DEFAULT_DURATION);
     }
 
     public void stopLoading() {
+        // restore original width
+        final ViewGroup.LayoutParams layoutParams = getLayoutParams();
+        layoutParams.width = mLayoutWidth;
+        requestLayout();
+
         mButton.setVisibility(View.VISIBLE);
         mProgressBar.setVisibility(View.GONE);
         setRadius(getPx(DEFAULT_RADIUS));
