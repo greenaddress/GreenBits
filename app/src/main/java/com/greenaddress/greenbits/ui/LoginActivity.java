@@ -87,6 +87,10 @@ public abstract class LoginActivity extends GaActivity {
                 .cancelable(false)
                 .build();
 
+        // select the current network
+        final String activeNetwork = mService.cfgGlobal("network").getString("network_active", "Bitcoin");
+        materialDialog.setSelectedIndex(networkSelectorList.indexOf(activeNetwork));
+
         materialDialog.show();
     }
 
