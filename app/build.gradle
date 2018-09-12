@@ -62,6 +62,8 @@ android {
         debug {
             multiDexEnabled true
             matchingFallbacks = ['normal']
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
         }
     }
     splits {
