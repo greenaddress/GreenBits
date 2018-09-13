@@ -46,6 +46,7 @@
         android:layout_marginTop="4dp"
         android:textColor="@color/whiteSecondary"
         android:inputType="textPassword"
+        android:imeOptions="flagNoPersonalizedLearning"
         android:importantForAccessibility="no" />
 
 </LinearLayout>

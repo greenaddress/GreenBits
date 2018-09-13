@@ -38,6 +38,7 @@
             android:textSize="34sp"
             android:inputType="numberPassword"
             android:importantForAccessibility="no"
+            android:imeOptions="flagNoPersonalizedLearning"
         />
         <requestFocus />
     </android.support.design.widget.TextInputLayout>

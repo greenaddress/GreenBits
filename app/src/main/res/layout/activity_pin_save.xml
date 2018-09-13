@@ -38,6 +38,7 @@
             android:maxLength="15"
             android:textColor="@color/secondaryTextColor"
             android:textSize="34sp"
+            android:imeOptions="flagNoPersonalizedLearning"
 
             />
         <requestFocus />

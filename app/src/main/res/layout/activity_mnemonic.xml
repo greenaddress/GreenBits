@@ -55,7 +55,7 @@
 
                     android:hint="@string/mnemonicHint"
                     android:imeActionLabel="@android:string/ok"
-                    android:imeOptions="actionGo"
+                    android:imeOptions="actionGo|flagNoPersonalizedLearning"
                     android:inputType="textMultiLine|textVisiblePassword"
                     android:importantForAccessibility="no"
                     android:minLines="2"

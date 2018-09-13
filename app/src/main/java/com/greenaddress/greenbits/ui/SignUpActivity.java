@@ -12,6 +12,7 @@ import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
 import android.os.Bundle;
+import android.support.v13.view.inputmethod.EditorInfoCompat;
 import android.text.method.LinkMovementMethod;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -348,6 +349,7 @@ public class SignUpActivity extends LoginActivity implements View.OnClickListene
         final ArrayAdapter<String> adapter;
         adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, MnemonicHelper.mWordsArray);
         text.setAdapter(adapter);
+        text.setImeOptions(EditorInfoCompat.IME_FLAG_NO_PERSONALIZED_LEARNING);
         text.setThreshold(1);
         text.addTextChangedListener(new UI.TextWatcher() {
             @Override

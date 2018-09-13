@@ -24,6 +24,7 @@
             android:layout_height="wrap_content"
             android:textColor="@color/whiteSecondary"
             android:inputType="numberPassword"
+            android:imeOptions="flagNoPersonalizedLearning"
             android:importantForAccessibility="no" />
     </android.support.design.widget.TextInputLayout>
 
